@@ -1,0 +1,30 @@
+# Rust source files (handled by cargo fmt / rustfmt)
+**/*.rs
+target/
+Cargo.lock
+
+# Dependencies and build outputs
+node_modules/
+dist/
+build/
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lockb
+
+# Environment and sensitive files
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Version control and editor directories
+.git/
+.cargo/
+.idea/
+.vscode/
+.agents/
+.codex/

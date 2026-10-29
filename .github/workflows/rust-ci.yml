@@ -1,0 +1,152 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [main, staging]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+  pull_request:
+    branches: [main, staging]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".gitignore"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          components: rustfmt
+          cache: "false"
+
+      - name: Check code formatting
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy Linter
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          components: clippy
+          cache: "true"
+
+      - name: Install cargo-hakari
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hakari
+
+      - name: Check workspace dependencies
+        run: cargo hakari generate --diff
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: Unit & Doc Tests
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          cache: "true"
+
+      - name: Run unit and doc tests
+        run: |
+          cargo test --lib --bins --all-features
+          cargo test --doc --all-features
+
+  audit:
+    name: Security Audit
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+
+      - name: Run security audit
+        run: cargo audit
+
+  docker:
+    name: Docker Build Test
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: omnikube:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  integration:
+    name: K8s Integration Tests
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          cache: "true"
+
+      - name: Setup Kind cluster
+        uses: helm/kind-action@v1
+
+      - name: Run integration tests
+        run: cargo test --test integration_k8s -- --include-ignored
+
+  check-success:
+    name: CI Success
+    if: always()
+    needs: [fmt, clippy, test, audit, docker, integration]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          echo "One or more required CI jobs did not succeed..."
+          exit 1
+
+      - name: All checks passed
+        run: echo "All checks passed..."

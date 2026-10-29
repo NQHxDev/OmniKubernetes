@@ -1,0 +1,25 @@
+[package]
+name = "omni-errors"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+axum.workspace = true
+chrono.workspace = true
+fluent-bundle.workspace = true
+omni-common.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+utoipa.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+tower.workspace = true

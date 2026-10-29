@@ -1,0 +1,11 @@
+[package]
+name = "gateway-service"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]

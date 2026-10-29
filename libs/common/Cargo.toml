@@ -1,0 +1,29 @@
+[package]
+name = "omni-common"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+arc-swap.workspace = true
+async-trait.workspace = true
+axum.workspace = true
+chrono.workspace = true
+fluent-bundle.workspace = true
+intl-memoizer.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_urlencoded.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+unic-langid.workspace = true
+utoipa.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+tower.workspace = true

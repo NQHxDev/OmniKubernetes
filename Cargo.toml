@@ -1,0 +1,150 @@
+[workspace]
+resolver = "2"
+members = ["libs/*", "services/*", "workspace-hack"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["NQHxZeion"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/NQHxDev/OmniKubernetes.git"
+
+[workspace.dependencies]
+# Internal workspace shared libraries
+omni-common = { path = "libs/common" }
+omni-errors = { path = "libs/errors" }
+omni-logging = { path = "libs/logging" }
+omni-auth = { path = "libs/auth" }
+omni-database = { path = "libs/database" }
+omni-cache = { path = "libs/cache" }
+omni-messaging = { path = "libs/messaging" }
+omni-metrics = { path = "libs/metrics" }
+
+# Web Framework & HTTP Networking
+axum = { version = "0.8", features = ["macros"] }
+tower = { version = "0.5", features = ["util", "timeout", "load-shed"] }
+tower-http = { version = "0.6", features = [
+    "trace",
+    "cors",
+    "compression-full",
+    "request-id",
+    "util",
+] }
+hyper = { version = "1.6", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
+
+# Concurrency & Synchronization
+arc-swap = "1.7"
+
+# Internationalization & Localization (Mozilla Fluent & BCP 47)
+fluent-bundle = "0.15"
+intl-memoizer = "0.5"
+unic-langid = "0.9"
+
+# Asynchronous Runtime
+tokio = { version = "1.43", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Serialization & Data Encoding
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+
+# Observability, Tracing & Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "json",
+    "fmt",
+] }
+tracing-appender = "0.2"
+
+# Metrics & Monitoring
+metrics = "0.24"
+metrics-exporter-prometheus = "0.16"
+
+# OpenAPI & API Documentation
+utoipa = { version = "5.3", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+
+# Database & Storage
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "chrono",
+    "uuid",
+    "macros",
+    "migrate",
+] }
+redis = { version = "0.28", features = [
+    "tokio-comp",
+    "connection-manager",
+    "aio",
+] }
+
+# Error Handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Time & Date Handling
+chrono = { version = "0.4", features = ["serde", "clock"] }
+
+# Identity & Security
+uuid = { version = "1.13", features = ["v4", "v7", "serde"] }
+jsonwebtoken = "9.3"
+argon2 = "0.5"
+
+# Environment & Configuration
+dotenvy = "0.15"
+config = "0.15"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.test]
+opt-level = 0
+debug = true
+
+# Integration Tests Package
+[package]
+name = "omni-integration-tests"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+tokio = { workspace = true }
+
+[[test]]
+name = "integration_k8s"
+path = "tests/integration_k8s.rs"
+harness = true
