@@ -1,0 +1,1 @@
+//! `OmniKubernetes` auth library.
