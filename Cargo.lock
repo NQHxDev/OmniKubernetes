@@ -1207,6 +1207,19 @@ dependencies = [
 [[package]]
 name = "workspace-hack"
 version = "0.1.0"
+dependencies = [
+ "libc",
+ "memchr",
+ "proc-macro2",
+ "quote",
+ "serde_core",
+ "smallvec",
+ "syn 3.0.9",
+ "tokio",
+ "tower",
+ "tracing",
+ "uuid",
+]
 
 [[package]]
 name = "zerofrom"
