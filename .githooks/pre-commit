@@ -1,4 +1,63 @@
 #!/bin/sh
 
-echo "Hello World!"
+# ANSI color codes for pretty output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Check if any Rust-related files are staged
+STAGED_RUST_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs)$|Cargo\.(toml|lock)$|rustfmt\.toml$')
+
+# If run manually in a terminal without staged files, check if any Rust files are modified in working tree
+if [ -z "$STAGED_RUST_FILES" ]; then
+    if [ -t 1 ] && [ -n "$(git status --porcelain | grep -E '\.(rs)$|Cargo\.(toml|lock)$|rustfmt\.toml$')" ]; then
+        STAGED_RUST_FILES="manual-check"
+    else
+    exit 0
+fi
+fi
+
+printf "%b\n" "\n${CYAN}${BOLD}Running pre-commit checks...${NC}"
+
+# Ensure cargo is available
+if ! command -v cargo >/dev/null 2>&1; then
+    printf "%b\n" "${RED}${BOLD}✖ [ERROR]${NC} 'cargo' command not found. Please install Rust and Cargo.\n"
+    exit 1
+fi
+
+# 1. Check code formatting with rustfmt
+printf "%b\n" "  Checking code formatting (${YELLOW}cargo fmt --all -- --check${NC})..."
+if ! cargo fmt --all -- --check; then
+    printf "%b\n" ""
+    printf "%b\n" "${RED}${BOLD}✖ [FAILED] Code formatting check failed!${NC}"
+    printf "%b\n" "  ${YELLOW}Fix:${NC} Run the following command to format your code automatically:"
+    printf "%b\n" "       ${BOLD}cargo fmt --all${NC}"
+    printf "%b\n" "  Then re-stage the changes with ${BOLD}git add <files>${NC} and commit again.\n"
+    exit 1
+fi
+
+# 2. Check clippy linter warnings & errors
+printf "%b\n" "  Checking clippy linter (${YELLOW}cargo clippy --all-targets --all-features -- -D warnings${NC})..."
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
+    printf "%b\n" ""
+    printf "%b\n" "${RED}${BOLD}✖ [FAILED] Clippy linter found warnings or errors!${NC}"
+    printf "%b\n" "  Please resolve all warnings and errors above before committing.\n"
+    exit 1
+fi
+
+# 3. Check workspace dependencies if cargo-hakari is installed
+if command -v cargo-hakari >/dev/null 2>&1; then
+    printf "%b\n" "  Checking workspace dependencies (${YELLOW}cargo hakari generate --diff${NC})..."
+    if ! cargo hakari generate --diff; then
+        printf "%b\n" ""
+        printf "%b\n" "${RED}${BOLD}✖ [FAILED] Cargo Hakari dependency diff detected!${NC}"
+        printf "%b\n" "  ${YELLOW}Fix:${NC} Run ${BOLD}cargo hakari generate${NC} and stage the updated files...\n"
+        exit 1
+    fi
+fi
+
+printf "%b\n" "${GREEN}${BOLD}✔ [PASSED] All checks passed successfully!${NC}\n"
 exit 0

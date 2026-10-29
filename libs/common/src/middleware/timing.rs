@@ -44,4 +44,3 @@ pub async fn timing_middleware(req: Request<Body>, next: Next) -> Response<Body>
 
     response
 }
-

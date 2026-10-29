@@ -124,4 +124,3 @@ pub fn match_accept_language(header_value: &str) -> Option<&'static str> {
     }
     None
 }
-

@@ -18,4 +18,3 @@ pub use matcher::{
     DEFAULT_LOCALE, SUPPORTED_LOCALES, match_accept_language, match_canonical_locale,
     parse_accept_language,
 };
-
