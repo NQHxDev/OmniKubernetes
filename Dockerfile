@@ -24,7 +24,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo build --release --bin "${SERVICE_NAME}" && \
+    cargo build --release --package "${SERVICE_NAME}" && \
     cp "/app/target/release/${SERVICE_NAME}" /app/service
 
 # Stage 4: Runtime - Minimal Distroless image (~20MB, non-root, no shell)
