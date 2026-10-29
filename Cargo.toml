@@ -133,3 +133,18 @@ strip = true
 [profile.test]
 opt-level = 0
 debug = true
+
+# Integration Tests Package
+[package]
+name = "omni-integration-tests"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+tokio = { workspace = true }
+
+[[test]]
+name = "integration_k8s"
+path = "tests/integration_k8s.rs"
+harness = true
