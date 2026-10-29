@@ -20,10 +20,11 @@
         "editor.tabSize": 4,
         "editor.formatOnSave": true
     },
+    "evenBetterToml.formatter.arrayAutoExpand": false,
     "[toml]": {
         "editor.defaultFormatter": "tamasfe.even-better-toml",
         "editor.tabSize": 4,
-        "editor.formatOnSave": true
+        "editor.formatOnSave": false
     },
     "[json]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
