@@ -1,10 +1,8 @@
-# Hakari configuration for workspace dependency management
-# https://docs.rs/cargo-hakari/latest/cargo_hakari/
+# Hakari configuration for workspace dependency optimization
+dep-format-version = "4"
 
-# The hakari package is used to manage workspace-hack
 hakari-package = "workspace-hack"
 
-# Platforms to generate dependencies for
 platforms = [
     "x86_64-unknown-linux-gnu",
     "x86_64-unknown-linux-musl",
@@ -12,9 +10,11 @@ platforms = [
     "aarch64-apple-darwin",
 ]
 
-# Resolver version (should match workspace resolver)
-resolver = "2"
+# Exclude workspace members that shouldn't be part of the unified build
+# (e.g., standalone tools or packages not meant to be compiled together)
+# workspace.members = []
 
-# Don't output any workspace members
-# (we want the workspace-hack to be separate)
-output-single-feature = true
+# Additional CLI options for hakari
+[cli]
+# Don't output colors in CI
+# color = "auto"
