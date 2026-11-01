@@ -13,10 +13,14 @@ arc-swap.workspace = true
 async-trait.workspace = true
 axum.workspace = true
 chrono.workspace = true
+config.workspace = true
+dotenvy.workspace = true
 fluent-bundle.workspace = true
 intl-memoizer.workspace = true
+omni-logging.workspace = true
 opentelemetry.workspace = true
 reqwest.workspace = true
+secrecy.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
@@ -28,6 +32,7 @@ tracing-opentelemetry.workspace = true
 unic-langid.workspace = true
 utoipa.workspace = true
 uuid.workspace = true
+validator.workspace = true
 
 [dev-dependencies]
 tower.workspace = true

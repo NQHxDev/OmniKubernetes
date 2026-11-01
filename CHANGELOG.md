@@ -2,8 +2,8 @@
 
 Tất cả những thay đổi đáng chú ý của dự án **OmniKubernetes** sẽ được ghi chép tại file này.
 
-Định dạng tài liệu này tuân thủ theo chuẩn [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/)
-và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org/lang/vi/).
+Định dạng tài liệu này tuân thủ theo chuẩn [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 
 ---
 
@@ -32,6 +32,16 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org/la
   - Chuẩn giao thức phản hồi và đa ngôn ngữ cấp doanh nghiệp (`base-response-architecture.md`).
   - Chuẩn tài liệu hóa API và tổng hợp OpenAPI tập trung tại Gateway (`api-documentation-architecture.md`).
 - Triển khai thư viện lõi `omni-common` (`libs/common`):
+  - **Type-Safe Configuration & Environment Binding (`config`):**
+    - Bộ nạp cấu hình phân cấp 5 tầng `ConfigLoader` (`loader.rs`): Nạp và hợp nhất sâu theo thứ tự ưu tiên tăng dần: Safe Defaults -> `config/base.yaml` -> `config/{env}/default.yaml` -> System Environment `OMNI__*` (kèm hỗ trợ `.env` cục bộ cho môi trường Dev) -> Programmatic Overrides (`with_override`, `with_env_vars`).
+    - Quy ước tiền tố `OMNI__` (Double-Underscore) phân tách chính xác các cấp độ lồng nhau mà vẫn bảo toàn tên trường `snake_case` trong Rust struct (`OMNI__DATABASE__MAX_CONNECTIONS` -> `database.max_connections`).
+    - Hỗ trợ bí danh tiêu chuẩn Cloud-Native và Kubernetes Downward API fallbacks: `APP_ENV`/`RUST_ENV`/`ENV` -> `service.environment`, `RUST_LOG`/`LOG_LEVEL` -> `logging.log_level`, `OTEL_EXPORTER_OTLP_ENDPOINT` -> `logging.otlp_endpoint`, `K8S_POD_NAME`/`HOSTNAME` -> `k8s.pod_name`, `K8S_NAMESPACE` -> `k8s.namespace`, `K8S_NODE_NAME` -> `k8s.node_name`.
+    - Quy trình thẩm định tức thời hai pha (Fail-Fast Validation): Pha 1 kiểm tra ràng buộc trường qua `validator::Validate` và Pha 2 kiểm tra các bất biến liên trường & chốt chặn bảo mật Production (`CFG_DB_POOL_BOUNDS`, `CFG_TIMEOUT_HIERARCHY`, `CFG_PROD_SECRET_REQUIRED`, `CFG_PROD_JWT_ENTROPY`, `CFG_PROD_SWAGGER_UI_DISABLED`, `CFG_PROD_CORS_STRICT`, `CFG_I18N_DEFAULT_IN_SUPPORTED`), gom toàn bộ lỗi vào `ConfigError::ValidationFailed` kèm gợi ý biến môi trường `OMNI__*`.
+    - Bảo vệ thông tin mật tuyệt đối (Zero-Leak Secrets): Bọc toàn bộ mật khẩu, khóa ký JWT, chuỗi kết nối vào `secrecy::SecretString`, tự động zeroize bộ nhớ khi drop, che giấu `[REDACTED]` khi format Debug/Display/JSON Summary, cùng các hàm tạo URL an toàn `database.redacted_url()`, `redis.redacted_url()`, `messaging.redacted_broker_url()`.
+    - Cấu trúc gốc mở rộng kiểu tĩnh `AppConfig<C = EmptyCustomConfig>` tích hợp sẵn toàn diện các phân hệ: `service`, `k8s`, `server`, `logging`, `observability`, `database`, `redis`, `auth`, `messaging`, `resilience`, `i18n`, và cho phép gắn cấu hình domain nghiệp vụ riêng thông qua `custom: C`.
+    - Cầu nối chuyển đổi sang `omni_logging::LoggingConfig` qua `config.to_logging_config()`.
+    - Hệ thống tập tin cấu hình chuẩn: `config/base.yaml`, `config/dev/default.yaml`, `config/staging/default.yaml`, `config/prod/default.yaml`, và `.env.example`.
+    - Bộ kiểm thử toàn diện `libs/common/tests/configuration_tests.rs` xác thực cả 5 tầng phân cấp, parsing `OMNI__`, Fail-Fast, Zero-Leak secrets, Production guardrails và cấu hình domain mở rộng.
   - **Base Response Data Contracts (`response`):** Cấu trúc `ApiResponse<T>`, `ApiResponseBuilder<T>`, `ResponseMeta` sử dụng `Cow<'static, str>` tối ưu hóa zero-allocation cho chuỗi tĩnh, định dạng thời gian chuẩn ISO 8601 / RFC 3339 UTC độ chính xác mili-giây (`YYYY-MM-DDTHH:mm:ss.sssZ`), cùng các hàm tạo response chuẩn ngữ nghĩa HTTP RFC 9110 (`200 OK`, `201 Created` kèm header `Location`, `204 No Content` không có body).
   - **Dual Pagination Architecture (`response`):** Hỗ trợ song song phân trang `OffsetPaginationMeta` (`mode = "offset"`) và `CursorPaginationMeta` (`mode = "cursor"`) qua Internally Tagged Enum `PaginationMeta` và `PaginatedResponse<T>`.
   - **Internationalization & Localization (`i18n`):**

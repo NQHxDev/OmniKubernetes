@@ -55,70 +55,57 @@ Trong kiến trúc phân tán (**Microservices Architecture on Kubernetes**), m�
 
 ### 3.1. Sơ đồ kiến trúc (System Topology Diagram)
 
-```text
-                                  CLIENT BROWSERS
-                    (Frontend Devs / Mobile Devs / QA / Partners)
-                                         │
-                                         ▼ HTTPS (:443)
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 KUBERNETES INGRESS / GATEWAY LAYER                     │
-│                                                                                        │
-│   Public Hostname: api.omnikubernetes.com                                              │
-│                                                                                        │
-│   ┌────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                           INGRESS / ENVOY API GATEWAY                          │   │
-│   │                                                                                │   │
-│   │  - /swagger-ui/*        ──> Swagger UI Aggregator (Static Assets Engine)       │   │
-│   │  - /swagger-config.json ──> Gateway Aggregated Service Catalog Registry        │   │
-│   │  - /api/v1/auth/*       ──> Strip Prefix (/api/v1/auth) -> auth-service:8080   │   │
-│   │  - /api/v1/orders/*     ──> Strip Prefix (/api/v1/orders) -> order-service:8080 │   │
-│   │  - /api/v1/payments/*   ──> Strip Prefix (/api/v1/payments) -> payment-svc:8080│   │
-│   └──────────────────────────────────────┬─────────────────────────────────────────┘   │
-└──────────────────────────────────────────┼─────────────────────────────────────────────┘
-                                           │
-         ┌─────────────────────────────────┼─────────────────────────────────┐
-         │ KUBERNETES PRIVATE CLUSTER NETWORK (ClusterIP Services Only)      │
-         │                                                                   │
-         ▼                                 ▼                                 ▼
-┌─────────────────────────┐       ┌─────────────────────────┐       ┌─────────────────────────┐
-│      auth-service       │       │      order-service      │       │     payment-service     │
-│ (Rust / Axum / Actix)   │       │   (Go / Node / Java)    │       │   (Rust / Axum)         │
-│                         │       │                         │       │                         │
-│ Port: 8080              │       │ Port: 8080              │       │ Port: 8080              │
-│ Pod Internal Routes:    │       │ Pod Internal Routes:    │       │ Pod Internal Routes:    │
-│ - /v3/api-docs (JSON)   │       │ - /v3/api-docs (JSON)   │       │ - /v3/api-docs (JSON)   │
-│ - /login, /register...  │       │ - /orders, /orders/:id  │       │ - /charges, /refunds... │
-│                         │       │                         │       │                         │
-│ [Swagger UI: DISABLED]  │       │ [Swagger UI: DISABLED]  │       │ [Swagger UI: DISABLED]  │
-└─────────────────────────┘       └─────────────────────────┘       └─────────────────────────┘
+```mermaid
+flowchart TD
+    Client["CLIENT BROWSERS\n(Frontend Devs / Mobile Devs / QA / Partners)"]
+
+    subgraph IngressLayer["KUBERNETES INGRESS / GATEWAY LAYER (api.omnikubernetes.com)"]
+        direction TB
+        Gateway["INGRESS / ENVOY API GATEWAY"]
+        SwaggerUI["Swagger UI Aggregator\n(Static Assets Engine)"]
+        SwaggerConfig["Gateway Aggregated Service Catalog Registry\n(/swagger-config.json)"]
+
+        Gateway -->|"/swagger-ui/*"| SwaggerUI
+        Gateway -->|"/swagger-config.json"| SwaggerConfig
+    end
+
+    subgraph PrivateCluster["KUBERNETES PRIVATE CLUSTER NETWORK (ClusterIP Services Only)"]
+        direction LR
+        AuthSvc["auth-service :8080\n(Rust / Axum / Actix)\n\nInternal Routes:\n• /v3/api-docs (JSON)\n• /login, /register...\n[Swagger UI: DISABLED]"]
+        OrderSvc["order-service :8080\n(Go / Node / Java)\n\nInternal Routes:\n• /v3/api-docs (JSON)\n• /orders, /orders/:id\n[Swagger UI: DISABLED]"]
+        PaymentSvc["payment-service :8080\n(Rust / Axum)\n\nInternal Routes:\n• /v3/api-docs (JSON)\n• /charges, /refunds...\n[Swagger UI: DISABLED]"]
+    end
+
+    Client -->|"HTTPS (:443)"| Gateway
+    Gateway -->|"Route: /api/v1/auth/*\nStrip Prefix -> auth-service:8080"| AuthSvc
+    Gateway -->|"Route: /api/v1/orders/*\nStrip Prefix -> order-service:8080"| OrderSvc
+    Gateway -->|"Route: /api/v1/payments/*\nStrip Prefix -> payment-svc:8080"| PaymentSvc
 ```
 
 ### 3.2. Luồng thực thi chi tiết (Execution Flow)
 
-```text
-Browser / Client               API Gateway / Ingress              Backend Microservice
-       │                                │                                      │
-       │─── 1. GET /swagger-ui/ ───────>│                                      │
-       │<── 2. Render UI Shell ─────────│                                      │
-       │                                │                                      │
-       │─── 3. GET /swagger-config ────>│                                      │
-       │<── 4. Return Service List ─────│ (Returns urls: [Auth, Order, ...])   │
-       │                                │                                      │
-       │─── 5. Select "Orders" ────────>│                                      │
-       │    GET /api/v1/orders/         │                                      │
-       │        v3/api-docs             │─── 6. Rewrite & Strip Prefix ───────>│
-       │                                │       GET /v3/api-docs               │
-       │                                │       Header: X-Forwarded-Prefix:    │
-       │                                │               /api/v1/orders         │
-       │                                │<── 7. Return OpenAPI JSON spec ──────│
-       │<── 8. Render Endpoints ────────│                                      │
-       │                                │                                      │
-       │─── 9. Execute "Try It Out" ────│                                      │
-       │    POST /api/v1/orders/create  │                                      │
-       │    (Bearer JWT Header)         │─── 10. Rewrite & Forward ───────────>│
-       │                                │        POST /create                  │
-       │                                │<── 11. Business Response 201 ────────│
-       │<── 12. Display JSON result ────│                                      │
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Browser / Client
+    participant Gateway as API Gateway / Ingress
+    participant Backend as Backend Microservice (order-service)
+
+    Client->>Gateway: GET /swagger-ui/
+    Gateway-->>Client: Render UI Shell
+
+    Client->>Gateway: GET /swagger-config
+    Gateway-->>Client: Return Service List (urls: [Auth, Order, ...])
+
+    Client->>Gateway: Select "Orders" (GET /api/v1/orders/v3/api-docs)
+    Gateway->>Backend: Rewrite & Strip Prefix: GET /v3/api-docs\nHeader: X-Forwarded-Prefix: /api/v1/orders
+    Backend-->>Gateway: Return OpenAPI JSON spec
+    Gateway-->>Client: Render Endpoints
+
+    Client->>Gateway: Execute "Try It Out": POST /api/v1/orders/create (Bearer JWT)
+    Gateway->>Backend: Rewrite & Forward: POST /create
+    Backend-->>Gateway: Business Response 201 Created
+    Gateway-->>Client: Display JSON result
 ```
 
 ---
@@ -608,33 +595,26 @@ spec:
 
 Khi hệ thống OmniKubernetes vượt ngưỡng **20+ Microservices**, mô hình Swagger UI Aggregator trên Gateway có thể được nâng cấp lên mô hình **Dedicated Developer Portal**:
 
-```text
-               ┌────────────────────────────────────────────────────────┐
-               │         CI / CD PIPELINE (GitHub Actions / GitLab)     │
-               └───────────────────────────┬────────────────────────────┘
-                                           │
-         ┌─────────────────────────────────┼────────────────────────────────┐
-         │ Build Artifact                  │ Build Artifact                 │
-         ▼                                 ▼                                ▼
-┌─────────────────┐               ┌─────────────────┐              ┌─────────────────┐
-│  auth-service   │               │  order-service  │              │ payment-service │
-│                 │               │                 │              │                 │
-│ Generates:      │               │ Generates:      │              │ Generates:      │
-│ openapi.json    │               │ openapi.json    │              │ openapi.json    │
-└────────┬────────┘               └────────┬────────┘              └────────┬────────┘
-         │                                 │                                │
-         └─────────────────────────────────┼────────────────────────────────┘
-                                           │ Push Specs at deploy time
-                                           ▼
-                    ┌──────────────────────────────────────────────┐
-                    │     INTERNAL DEVELOPER PORTAL (BACKSTAGE)    │
-                    │      or Centralized API Catalog (S3/R2)      │
-                    │                                              │
-                    │ - Search across all services                 │
-                    │ - Mock Server capabilities                   │
-                    │ - Breaking Change Detection (oasdiff)        │
-                    │ - Contract Testing (Pact / Prism)            │
-                    └──────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    CICD["CI / CD PIPELINE\n(GitHub Actions / GitLab)"]
+
+    subgraph Services["Microservices Build & Spec Generation"]
+        direction LR
+        AuthSvc["auth-service\n\nGenerates:\nopenapi.json"]
+        OrderSvc["order-service\n\nGenerates:\nopenapi.json"]
+        PaymentSvc["payment-service\n\nGenerates:\nopenapi.json"]
+    end
+
+    Portal["INTERNAL DEVELOPER PORTAL (BACKSTAGE)\nor Centralized API Catalog (S3/R2)\n\n• Search across all services\n• Mock Server capabilities\n• Breaking Change Detection (oasdiff)\n• Contract Testing (Pact / Prism)"]
+
+    CICD -->|"Build Artifact"| AuthSvc
+    CICD -->|"Build Artifact"| OrderSvc
+    CICD -->|"Build Artifact"| PaymentSvc
+
+    AuthSvc -->|"Push Specs at deploy time"| Portal
+    OrderSvc -->|"Push Specs at deploy time"| Portal
+    PaymentSvc -->|"Push Specs at deploy time"| Portal
 ```
 
 ---

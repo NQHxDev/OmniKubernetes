@@ -8,10 +8,18 @@
 //!   powered by `ArcSwap`.
 //! - **Observability & Timing Middleware (`middleware`):** W3C `traceparent` & `X-Request-Id` correlation
 //!   (`RequestContext`) and W3C `Server-Timing` / `X-Response-Time` latency headers.
+//! - **Configuration & Environment Binding (`config`):** Enterprise 5-layer hierarchical configuration,
+//!   fail-fast validation, zero-leak secret protection with memory zeroization, and Kubernetes Downward API.
 
+pub mod config;
 pub mod i18n;
 pub mod middleware;
 pub mod response;
+
+pub use config::{
+    AppConfig, AppEnvironment, ConfigError, ConfigLoader, ConfigValidationIssue, EmptyCustomConfig,
+    ExposeSecret, SecretString,
+};
 
 pub use i18n::{
     AuthUserClaims, DEFAULT_LOCALE, I18nError, I18nManager, LocaleBundles, ReloadLocalesResult,

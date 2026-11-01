@@ -110,6 +110,8 @@ argon2 = "0.6"
 # Environment & Configuration
 dotenvy = "0.15"
 config = "0.15"
+secrecy = { version = "0.10", features = ["serde"] }
+validator = { version = "0.20", features = ["derive"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"

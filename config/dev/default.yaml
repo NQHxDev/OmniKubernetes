@@ -1,0 +1,13 @@
+# OmniKubernetes Development Profile Configuration (config/dev/default.yaml)
+# Optimized for local developer experience.
+
+service:
+  environment: "dev"
+
+logging:
+  log_level: "debug"
+  log_format: "pretty"
+
+observability:
+  swagger_ui_enabled: true
+  sampling_ratio: 1.0

@@ -3,7 +3,8 @@
 use std::env;
 
 /// Output log format for `omni-logging`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum LogFormat {
     /// Newline-delimited JSON format for Staging / Production Kubernetes environments.
     #[default]
