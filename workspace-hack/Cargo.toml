@@ -6,43 +6,77 @@ publish = false
 
 ### BEGIN HAKARI SECTION
 [dependencies]
+axum = { version = "0.8", features = ["macros"] }
+axum-core = { version = "0.5", default-features = false, features = ["tracing"] }
+form_urlencoded = { version = "1" }
+futures-task = { version = "0.3", default-features = false, features = ["std"] }
+futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "io", "sink"] }
+hyper = { version = "1", features = ["client", "http1", "http2", "server"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "server-auto", "service"] }
+indexmap = { version = "2", features = ["serde"] }
+log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
+regex-automata = { version = "0.4", default-features = false, features = ["dfa-build", "dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "std", "unicode"] }
+regex-syntax = { version = "0.8" }
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls"] }
+serde = { version = "1", features = ["derive"] }
 serde_core = { version = "1", features = ["alloc"] }
+serde_json = { version = "1", features = ["raw_value"] }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
+tinystr = { version = "0.8", features = ["zerovec"] }
 tokio = { version = "1", features = ["full"] }
-tower = { version = "0.5", default-features = false, features = ["load-shed", "log", "make", "timeout", "util"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic = { version = "0.14" }
+tower = { version = "0.5", default-features = false, features = ["balance", "buffer", "limit", "load-shed", "log", "timeout"] }
 tracing = { version = "0.1", features = ["log"] }
+tracing-log = { version = "0.2", default-features = false, features = ["log-tracer", "std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
+zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
 
 [build-dependencies]
 memchr = { version = "2" }
 proc-macro2 = { version = "1" }
 quote = { version = "1" }
+regex-automata = { version = "0.4", default-features = false, features = ["dfa-build", "dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "std", "unicode"] }
+regex-syntax = { version = "0.8" }
 serde_core = { version = "1", features = ["alloc"] }
-syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3", features = ["full", "visit-mut"] }
+syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2", features = ["extra-traits", "full", "visit-mut"] }
 uuid = { version = "1", features = ["serde", "v4", "v7"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
+futures-channel = { version = "0.3", features = ["sink"] }
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 libc = { version = "0.2" }
+tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 libc = { version = "0.2" }
 
 [target.x86_64-unknown-linux-musl.dependencies]
+futures-channel = { version = "0.3", features = ["sink"] }
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 libc = { version = "0.2" }
+tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-musl.build-dependencies]
 libc = { version = "0.2" }
 
 [target.x86_64-apple-darwin.dependencies]
+futures-channel = { version = "0.3", features = ["sink"] }
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 libc = { version = "0.2" }
+tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 libc = { version = "0.2" }
 
 [target.aarch64-apple-darwin.dependencies]
+futures-channel = { version = "0.3", features = ["sink"] }
+hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 libc = { version = "0.2" }
+tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 libc = { version = "0.2" }

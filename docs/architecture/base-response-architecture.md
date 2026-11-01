@@ -14,23 +14,23 @@ Trong hệ thống kiến trúc phân tán quy mô doanh nghiệp (**Enterprise 
 Tiêu chuẩn kiến trúc này xác lập **6 nguyên lý cốt lõi (Core Architectural Tenets)**:
 
 1. **HTTP Status Code là Single Source of Truth:**
-    - Tuyệt đối **không** áp dụng mô hình phản mẫu (anti-pattern) trả về HTTP 200 OK nhưng body chứa `"success": false` hoặc payload lỗi.
-    - Ingress, Envoy Gateway, Service Mesh (Istio/Linkerd) và APM probes bắt buộc phải dựa trên HTTP Status Code chuẩn để tính toán chính xác các chỉ số vận hành vàng: SLA, SLO, Error Budget và Circuit Breaking.
+   - Tuyệt đối **không** áp dụng mô hình phản mẫu (anti-pattern) trả về HTTP 200 OK nhưng body chứa `"success": false` hoặc payload lỗi.
+   - Ingress, Envoy Gateway, Service Mesh (Istio/Linkerd) và APM probes bắt buộc phải dựa trên HTTP Status Code chuẩn để tính toán chính xác các chỉ số vận hành vàng: SLA, SLO, Error Budget và Circuit Breaking.
 2. **Tuân thủ triệt để tiêu chuẩn quốc tế (Standards-First):**
-    - Áp dụng **RFC 9457** (Problem Details for HTTP APIs) cho toàn bộ mã lỗi REST.
-    - Áp dụng **RFC 9110** (HTTP Semantics) cho định danh header và xử lý mã trạng thái đặc thù (`204 No Content`, `201 Created`).
-    - Thời gian biểu diễn theo **ISO 8601 / RFC 3339** (UTC).
-    - Ngôn ngữ và quốc gia tuân thủ **BCP 47** và **RFC 4647** (Language Priority & Subtag Negotiation).
+   - Áp dụng **RFC 9457** (Problem Details for HTTP APIs) cho toàn bộ mã lỗi REST.
+   - Áp dụng **RFC 9110** (HTTP Semantics) cho định danh header và xử lý mã trạng thái đặc thù (`204 No Content`, `201 Created`).
+   - Thời gian biểu diễn theo **ISO 8601 / RFC 3339** (UTC).
+   - Ngôn ngữ và quốc gia tuân thủ **BCP 47** và **RFC 4647** (Language Priority & Subtag Negotiation).
 3. **Phân tách Observability hai lớp: `request_id` song hành `trace_id`:**
-    - `request_id`: Định danh duy nhất cho **100%** HTTP requests phục vụ gom log (Log Aggregation trên Loki/ELK) và tra cứu sự cố CSKH/kỹ thuật.
-    - `trace_id`: W3C Distributed Trace Context phục vụ APM (Grafana Tempo / Jaeger), có thể chịu cơ chế lấy mẫu theo tỷ lệ (Sampling Rate).
+   - `request_id`: Định danh duy nhất cho **100%** HTTP requests phục vụ gom log (Log Aggregation trên Loki/ELK) và tra cứu sự cố CSKH/kỹ thuật.
+   - `trace_id`: W3C Distributed Trace Context phục vụ APM (Grafana Tempo / Jaeger), có thể chịu cơ chế lấy mẫu theo tỷ lệ (Sampling Rate).
 4. **Hỗ trợ phân trang kép (Dual Pagination Architecture):**
-    - Hỗ trợ song song **Offset-based** (dành cho Web Admin / UI Table cần nhảy số trang) và **Cursor-based / Keyset** (dành cho tập dữ liệu lớn $O(1)$, infinite scroll trên Mobile, event stream, audit trail không gây áp lực quét $O(N)$ lên database).
+   - Hỗ trợ song song **Offset-based** (dành cho Web Admin / UI Table cần nhảy số trang) và **Cursor-based / Keyset** (dành cho tập dữ liệu lớn $O(1)$, infinite scroll trên Mobile, event stream, audit trail không gây áp lực quét $O(N)$ lên database).
 5. **Đa ngôn ngữ hai chế độ (Dual-mode i18n/l10n):**
-    - **Server-side localization:** Render sẵn thông điệp hoàn chỉnh dựa trên Mozilla Fluent cho Client hiển thị ngay lập tức (Toast/Alert/Snackbars).
-    - **Client-side enablement:** Cung cấp kèm `code` và `params` động trong validation errors để Native Mobile App (iOS/Android) hoặc SPA Web có toàn quyền tự bản địa hóa ở tầng Presentation nếu người dùng thay đổi ngôn ngữ offline.
+   - **Server-side localization:** Render sẵn thông điệp hoàn chỉnh dựa trên Mozilla Fluent cho Client hiển thị ngay lập tức (Toast/Alert/Snackbars).
+   - **Client-side enablement:** Cung cấp kèm `code` và `params` động trong validation errors để Native Mobile App (iOS/Android) hoặc SPA Web có toàn quyền tự bản địa hóa ở tầng Presentation nếu người dùng thay đổi ngôn ngữ offline.
 6. **Rust Idiomatic & Zero-Cost Abstraction:**
-    - Tận dụng tối đa Type System của Rust, Serde serialization, không dynamic allocation thừa, tối ưu hóa zero-copy và compile-time safety.
+   - Tận dụng tối đa Type System của Rust, Serde serialization, không dynamic allocation thừa, tối ưu hóa zero-copy và compile-time safety.
 
 ---
 
@@ -76,10 +76,10 @@ Mọi response thành công hoặc lỗi (ngoại trừ HTTP 204 No Content) đ�
 
 ```json
 {
-    "request_id": "01a185db-a70e-777a-8cee-9ad64ad10253",
-    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "timestamp": "2026-10-29T08:30:00.125Z",
-    "locale": "vi-VN"
+  "request_id": "01a185db-a70e-777a-8cee-9ad64ad10253",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "timestamp": "2026-10-29T08:30:00.125Z",
+  "locale": "vi-VN"
 }
 ```
 
@@ -92,9 +92,9 @@ Mọi response thành công hoặc lỗi (ngoại trừ HTTP 204 No Content) đ�
 
 - **Tuyệt đối không đưa `duration_ms` vào JSON Body:** Trong Rust Axum, Handler là nơi trực tiếp sinh ra `ApiResponse<T>` và serialize thành JSON payload. Tại thời điểm Handler chạy xong, request chưa đi qua Egress Middleware nên không thể biết tổng thời gian hoàn tất xử lý. Nếu Middleware Ingress-Egress can thiệp vào body, nó sẽ buộc phải parse lại toàn bộ JSON, mutate trường `duration_ms` rồi serialize lại — gây lãng phí bộ nhớ, cấp phát động và phá hủy hoàn toàn nguyên lý **Zero-Cost Abstraction**.
 - **Chuẩn hóa qua HTTP Response Headers:**
-    - **W3C `Server-Timing`:** `Server-Timing: total;dur=12.4` (Chuẩn W3C Recommendation, được hỗ trợ native bởi Chrome/Firefox DevTools, Grafana Tempo/APM, Datadog).
-    - **`X-Response-Time`:** `X-Response-Time: 12.4ms` (Tương thích ngược với các client microservices/APM truyền thống).
-    - Egress Middleware tính toán `start.elapsed()` và chèn trực tiếp vào Header với độ phức tạp $O(1)$, zero-copy, không đụng chạm JSON payload.
+  - **W3C `Server-Timing`:** `Server-Timing: total;dur=12.4` (Chuẩn W3C Recommendation, được hỗ trợ native bởi Chrome/Firefox DevTools, Grafana Tempo/APM, Datadog).
+  - **`X-Response-Time`:** `X-Response-Time: 12.4ms` (Tương thích ngược với các client microservices/APM truyền thống).
+  - Egress Middleware tính toán `start.elapsed()` và chèn trực tiếp vào Header với độ phức tạp $O(1)$, zero-copy, không đụng chạm JSON payload.
 
 ---
 
@@ -104,21 +104,21 @@ Mọi response thành công hoặc lỗi (ngoại trừ HTTP 204 No Content) đ�
 
 ```json
 {
-    "success": true,
-    "code": "OK",
-    "message": "Lấy thông tin người dùng thành công.",
-    "data": {
-        "user_id": "01a185dd-a81b-72fe-be38-bc8b3c2fb39f",
-        "email": "user@example.com",
-        "full_name": "Nguyen Van A",
-        "created_at": "2026-10-29T08:30:00.000Z"
-    },
-    "meta": {
-        "request_id": "01a185dd-dbd1-74eb-96df-2f4a27de348b",
-        "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-        "timestamp": "2026-10-29T08:30:00.125Z",
-        "locale": "vi-VN"
-    }
+  "success": true,
+  "code": "OK",
+  "message": "Lấy thông tin người dùng thành công.",
+  "data": {
+    "user_id": "01a185dd-a81b-72fe-be38-bc8b3c2fb39f",
+    "email": "user@example.com",
+    "full_name": "Nguyen Van A",
+    "created_at": "2026-10-29T08:30:00.000Z"
+  },
+  "meta": {
+    "request_id": "01a185dd-dbd1-74eb-96df-2f4a27de348b",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "timestamp": "2026-10-29T08:30:00.125Z",
+    "locale": "vi-VN"
+  }
 }
 ```
 
@@ -144,31 +144,31 @@ Phù hợp cho các màn hình quản trị (Admin Portal), nơi người dùng 
 
 ```json
 {
-    "success": true,
-    "code": "OK",
-    "message": "Truy vấn danh sách đơn hàng thành công.",
-    "data": [
-        {
-            "id": "ord_01HZX89AB",
-            "total_amount": 250000.0,
-            "currency": "VND"
-        }
-    ],
-    "meta": {
-        "request_id": "01a185e0-c938-73d1-ba0a-38a152c436de",
-        "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-        "timestamp": "2026-10-29T08:30:00.125Z",
-        "locale": "vi-VN",
-        "pagination": {
-            "mode": "offset",
-            "page": 1,
-            "page_size": 20,
-            "total_items": 142,
-            "total_pages": 8,
-            "has_next": true,
-            "has_prev": false
-        }
+  "success": true,
+  "code": "OK",
+  "message": "Truy vấn danh sách đơn hàng thành công.",
+  "data": [
+    {
+      "id": "ord_01HZX89AB",
+      "total_amount": 250000.0,
+      "currency": "VND"
     }
+  ],
+  "meta": {
+    "request_id": "01a185e0-c938-73d1-ba0a-38a152c436de",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "timestamp": "2026-10-29T08:30:00.125Z",
+    "locale": "vi-VN",
+    "pagination": {
+      "mode": "offset",
+      "page": 1,
+      "page_size": 20,
+      "total_items": 142,
+      "total_pages": 8,
+      "has_next": true,
+      "has_prev": false
+    }
+  }
 }
 ```
 
@@ -178,30 +178,30 @@ Bắt buộc sử dụng cho các tập dữ liệu lớn, bảng log, audit tra
 
 ```json
 {
-    "success": true,
-    "code": "OK",
-    "message": "Truy vấn dòng sự kiện kiểm toán thành công.",
-    "data": [
-        {
-            "id": "evt_01JAZZ8001",
-            "action": "USER_LOGIN",
-            "actor": "usr_01HZX87Q1K7",
-            "created_at": "2026-10-29T08:35:10.000Z"
-        }
-    ],
-    "meta": {
-        "request_id": "01a185e1-01a1-7570-a6e1-d43de9dd7df6",
-        "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-        "timestamp": "2026-10-29T08:30:00.125Z",
-        "locale": "vi-VN",
-        "pagination": {
-            "mode": "cursor",
-            "next_cursor": "ZXhwb3J0X2lkOjAxSkFaWjgwMDE=",
-            "prev_cursor": null,
-            "has_more": true,
-            "limit": 50
-        }
+  "success": true,
+  "code": "OK",
+  "message": "Truy vấn dòng sự kiện kiểm toán thành công.",
+  "data": [
+    {
+      "id": "evt_01JAZZ8001",
+      "action": "USER_LOGIN",
+      "actor": "usr_01HZX87Q1K7",
+      "created_at": "2026-10-29T08:35:10.000Z"
     }
+  ],
+  "meta": {
+    "request_id": "01a185e1-01a1-7570-a6e1-d43de9dd7df6",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "timestamp": "2026-10-29T08:30:00.125Z",
+    "locale": "vi-VN",
+    "pagination": {
+      "mode": "cursor",
+      "next_cursor": "ZXhwb3J0X2lkOjAxSkFaWjgwMDE=",
+      "prev_cursor": null,
+      "has_more": true,
+      "limit": 50
+    }
+  }
 }
 ```
 
@@ -213,63 +213,63 @@ Mọi lỗi trả về (4xx, 5xx) phải tuân thủ chuẩn **RFC 9457 (Problem
 
 ```json
 {
-    "type": "https://errors.omnikubernetes.com/validation-error",
-    "title": "Dữ liệu yêu cầu không hợp lệ",
-    "status": 422,
-    "detail": "Có 2 trường dữ liệu không vượt qua kiểm tra ràng buộc nghiệp vụ.",
-    "instance": "/api/v1/orders",
-    "code": "ERR_VALIDATION_FAILED",
-    "invalid_params": [
-        {
-            "name": "items.0.quantity",
-            "reason": "Số lượng sản phẩm trong đơn hàng phải lớn hơn 0.",
-            "code": "NUMBER_MIN_VALUE",
-            "params": {
-                "min": 1,
-                "actual": 0
-            }
-        },
-        {
-            "name": "shipping_address.postal_code",
-            "reason": "Mã bưu chính không đúng định dạng.",
-            "code": "INVALID_POSTAL_CODE",
-            "params": {
-                "pattern": "^[0-9]{5,6}$"
-            }
-        }
-    ],
-    "meta": {
-        "request_id": "01a185e2-2fed-7781-8100-1b8e31a0eee5",
-        "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-        "timestamp": "2026-10-29T08:30:00.125Z",
-        "locale": "vi-VN"
+  "type": "https://errors.omnikubernetes.com/validation-error",
+  "title": "Dữ liệu yêu cầu không hợp lệ",
+  "status": 422,
+  "detail": "Có 2 trường dữ liệu không vượt qua kiểm tra ràng buộc nghiệp vụ.",
+  "instance": "/api/v1/orders",
+  "code": "ERR_VALIDATION_FAILED",
+  "invalid_params": [
+    {
+      "name": "items.0.quantity",
+      "reason": "Số lượng sản phẩm trong đơn hàng phải lớn hơn 0.",
+      "code": "NUMBER_MIN_VALUE",
+      "params": {
+        "min": 1,
+        "actual": 0
+      }
+    },
+    {
+      "name": "shipping_address.postal_code",
+      "reason": "Mã bưu chính không đúng định dạng.",
+      "code": "INVALID_POSTAL_CODE",
+      "params": {
+        "pattern": "^[0-9]{5,6}$"
+      }
     }
+  ],
+  "meta": {
+    "request_id": "01a185e2-2fed-7781-8100-1b8e31a0eee5",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "timestamp": "2026-10-29T08:30:00.125Z",
+    "locale": "vi-VN"
+  }
 }
 ```
 
 #### Quy tắc các trường trong RFC 9457:
 
 1. **Trường chuẩn theo RFC 9457:**
-    - `type` (URI, bắt buộc): URI định danh duy nhất cho loại lỗi.
-    - `title` (String, bắt buộc): Tóm tắt ngắn gọn loại lỗi theo ngôn ngữ yêu cầu.
-    - `status` (u16, bắt buộc): Mã trạng thái HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `500`...).
-    - `detail` (String, bắt buộc): Chi tiết nguyên nhân lỗi phát sinh lần này.
-    - `instance` (URI Reference, bắt buộc): Endpoint URI phát sinh lỗi.
+   - `type` (URI, bắt buộc): URI định danh duy nhất cho loại lỗi.
+   - `title` (String, bắt buộc): Tóm tắt ngắn gọn loại lỗi theo ngôn ngữ yêu cầu.
+   - `status` (u16, bắt buộc): Mã trạng thái HTTP (`400`, `401`, `403`, `404`, `409`, `422`, `500`...).
+   - `detail` (String, bắt buộc): Chi tiết nguyên nhân lỗi phát sinh lần này.
+   - `instance` (URI Reference, bắt buộc): Endpoint URI phát sinh lỗi.
 2. **RFC 9457 Extension Members (Mở rộng an toàn theo chuẩn RFC):**
-    - `code` (String): Mã lỗi máy đọc (Machine-readable Domain Error Code) giúp code client bắt lỗi không phụ thuộc vào message.
-    - `invalid_params` (Array): Danh sách lỗi chi tiết từng tham số (RFC 9457 Appendix A.1).
-        - `name` (String, bắt buộc): Đường dẫn định danh trường dữ liệu vi phạm chuẩn hóa theo **Dot Notation**:
-            - **Trường cấp gốc (Root level):** Định dạng `snake_case` (ví dụ: `email`, `role`, `password`).
-            - **Đối tượng lồng nhau (Nested Objects):** Phân tách bằng dấu chấm `.` (ví dụ: `shipping_address.postal_code`, `user.profile.display_name`).
-            - **Danh sách mảng (Arrays / Collections):** Phân tách bằng chỉ mục số 0-based index `array.index.field` (ví dụ: `items.0.quantity`, `recipients.1.phone_number`).
-            - **Ánh xạ chuẩn RFC 6901 (JSON Pointer):** Đường dẫn Dot Notation `items.0.quantity` tương ứng 1-1 với JSON Pointer `/items/0/quantity`. Quy chuẩn này tương thích tuyệt đối với các form state binder trên Frontend (React Hook Form `setError('items.0.quantity', ...)`, Formik, VeeValidate) và Mobile (Flutter/SwiftUI), cho phép xây dựng các hàm generic error-binder tự động gán thông báo lỗi vào đúng input component của form.
-        - `reason`: Thông điệp bản địa hóa sẵn từ Server.
-        - `code`: Mã lỗi cụ thể của trường đó.
-        - `rejected_value` (Tùy chọn - **Secure-by-default Policy**):
-            - **Không echo dữ liệu PII và Free-form text:** Tuyệt đối không phản hồi lại dữ liệu người dùng nhập cho các trường thông tin định danh cá nhân (PII như CCCD/CMND, số điện thoại, email, địa chỉ, tài khoản ngân hàng, OTP...) và các chuỗi nhập tự do nhằm triệt tiêu nguy cơ **rò rỉ dữ liệu cá nhân (PII Leak)** trong gateway/access logs và nguy cơ tấn công **Reflected XSS / Content Injection** khi Client render lên UI.
-            - **Chỉ áp dụng cho Non-PII Enums / Scalar Constants:** Chỉ cho phép xuất hiện đối với các giá trị enum hữu hạn hoặc hằng số hệ thống không hợp lệ (ví dụ: `role: "SUPER_ADMIN"`). Mọi trường nhạy cảm hoặc chuỗi tự do phải được **bỏ qua (`None`)** và ẩn hoàn toàn khỏi response (`skip_serializing_if = "Option::is_none"`).
-        - `params`: **Đối tượng JSON động chứa các biến nội suy an toàn** (`min`, `max`, `count`, `allowed`...). Đây là điểm quyết định cho phép Native Mobile Apps hoặc SPA tự thực hiện localization ở Client nếu muốn mà không cần phụ thuộc vào việc echo dữ liệu vi phạm.
-    - `meta`: Metadata truy vết đồng bộ (`request_id`, `trace_id`).
+   - `code` (String): Mã lỗi máy đọc (Machine-readable Domain Error Code) giúp code client bắt lỗi không phụ thuộc vào message.
+   - `invalid_params` (Array): Danh sách lỗi chi tiết từng tham số (RFC 9457 Appendix A.1).
+     - `name` (String, bắt buộc): Đường dẫn định danh trường dữ liệu vi phạm chuẩn hóa theo **Dot Notation**:
+       - **Trường cấp gốc (Root level):** Định dạng `snake_case` (ví dụ: `email`, `role`, `password`).
+       - **Đối tượng lồng nhau (Nested Objects):** Phân tách bằng dấu chấm `.` (ví dụ: `shipping_address.postal_code`, `user.profile.display_name`).
+       - **Danh sách mảng (Arrays / Collections):** Phân tách bằng chỉ mục số 0-based index `array.index.field` (ví dụ: `items.0.quantity`, `recipients.1.phone_number`).
+       - **Ánh xạ chuẩn RFC 6901 (JSON Pointer):** Đường dẫn Dot Notation `items.0.quantity` tương ứng 1-1 với JSON Pointer `/items/0/quantity`. Quy chuẩn này tương thích tuyệt đối với các form state binder trên Frontend (React Hook Form `setError('items.0.quantity', ...)`, Formik, VeeValidate) và Mobile (Flutter/SwiftUI), cho phép xây dựng các hàm generic error-binder tự động gán thông báo lỗi vào đúng input component của form.
+     - `reason`: Thông điệp bản địa hóa sẵn từ Server.
+     - `code`: Mã lỗi cụ thể của trường đó.
+     - `rejected_value` (Tùy chọn - **Secure-by-default Policy**):
+       - **Không echo dữ liệu PII và Free-form text:** Tuyệt đối không phản hồi lại dữ liệu người dùng nhập cho các trường thông tin định danh cá nhân (PII như CCCD/CMND, số điện thoại, email, địa chỉ, tài khoản ngân hàng, OTP...) và các chuỗi nhập tự do nhằm triệt tiêu nguy cơ **rò rỉ dữ liệu cá nhân (PII Leak)** trong gateway/access logs và nguy cơ tấn công **Reflected XSS / Content Injection** khi Client render lên UI.
+       - **Chỉ áp dụng cho Non-PII Enums / Scalar Constants:** Chỉ cho phép xuất hiện đối với các giá trị enum hữu hạn hoặc hằng số hệ thống không hợp lệ (ví dụ: `role: "SUPER_ADMIN"`). Mọi trường nhạy cảm hoặc chuỗi tự do phải được **bỏ qua (`None`)** và ẩn hoàn toàn khỏi response (`skip_serializing_if = "Option::is_none"`).
+     - `params`: **Đối tượng JSON động chứa các biến nội suy an toàn** (`min`, `max`, `count`, `allowed`...). Đây là điểm quyết định cho phép Native Mobile Apps hoặc SPA tự thực hiện localization ở Client nếu muốn mà không cần phụ thuộc vào việc echo dữ liệu vi phạm.
+   - `meta`: Metadata truy vết đồng bộ (`request_id`, `trace_id`).
 
 ---
 
@@ -359,15 +359,15 @@ pub struct I18nManager {
 ```
 
 - **Đọc bản dịch (Hot Path - Lock-free Read):**
-    - Worker threads gọi `bundles.load()` hoặc `bundles.load_full()`. Đây là atomic load zero-cost (không mutex, không rwlock overhead, không context switch), đảm bảo thời gian tra cứu $O(1)$ ngay cả khi hệ thống chịu tải hàng trăm nghìn requests/giây.
+  - Worker threads gọi `bundles.load()` hoặc `bundles.load_full()`. Đây là atomic load zero-cost (không mutex, không rwlock overhead, không context switch), đảm bảo thời gian tra cứu $O(1)$ ngay cả khi hệ thống chịu tải hàng trăm nghìn requests/giây.
 - **Quy trình Hot-Reload (Reload Path - Zero Downtime):**
-    1. Khi nhận tín hiệu cập nhật, luồng background tiến hành đọc các file `.ftl` mới và parse sang một `HashMap` tạm (`next_bundles`) trên bộ nhớ độc lập.
-    2. Thực hiện validate tính toàn vẹn cú pháp của toàn bộ file dịch mới. Nếu có lỗi parse hoặc thiếu bundle quan trọng, hủy bỏ bản cập nhật, ghi log cảnh báo và giữ nguyên trạng thái cũ (không làm sập Pod hay trả thông điệp hỏng cho người dùng).
-    3. Nếu parse thành công, thực hiện `bundles.store(Arc::new(next_bundles))` (hoặc `swap()`) trong $O(1)$ thông qua con trỏ atomic.
-    4. Các worker thread đang xử lý dở dang request trước thời điểm swap vẫn giữ tham chiếu an toàn đến `Arc<LocaleBundles>` cũ cho đến khi hoàn thành request, sau đó bộ nhớ cũ tự động được giải phóng an toàn (RCU semantics).
+  1. Khi nhận tín hiệu cập nhật, luồng background tiến hành đọc các file `.ftl` mới và parse sang một `HashMap` tạm (`next_bundles`) trên bộ nhớ độc lập.
+  2. Thực hiện validate tính toàn vẹn cú pháp của toàn bộ file dịch mới. Nếu có lỗi parse hoặc thiếu bundle quan trọng, hủy bỏ bản cập nhật, ghi log cảnh báo và giữ nguyên trạng thái cũ (không làm sập Pod hay trả thông điệp hỏng cho người dùng).
+  3. Nếu parse thành công, thực hiện `bundles.store(Arc::new(next_bundles))` (hoặc `swap()`) trong $O(1)$ thông qua con trỏ atomic.
+  4. Các worker thread đang xử lý dở dang request trước thời điểm swap vẫn giữ tham chiếu an toàn đến `Arc<LocaleBundles>` cũ cho đến khi hoàn thành request, sau đó bộ nhớ cũ tự động được giải phóng an toàn (RCU semantics).
 - **Cơ chế kích hoạt Reload:**
-    - **HTTP Endpoint:** `/internal/v1/reload-locales` (bảo vệ bởi RBAC / NetworkPolicy nội bộ).
-    - **Signal Handling:** Lắng nghe tín hiệu `SIGHUP` (qua `tokio::signal::unix::signal(SignalKind::hangup())`) được phát ra tự động khi Kubernetes ConfigMap cập nhật file `.ftl` mount vào Pod.
+  - **HTTP Endpoint:** `/internal/v1/reload-locales` (bảo vệ bởi RBAC / NetworkPolicy nội bộ).
+  - **Signal Handling:** Lắng nghe tín hiệu `SIGHUP` (qua `tokio::signal::unix::signal(SignalKind::hangup())`) được phát ra tự động khi Kubernetes ConfigMap cập nhật file `.ftl` mount vào Pod.
 
 ---
 
@@ -747,27 +747,30 @@ Client (Web / Mobile / Third-Party)
 ## 8. Security & Production Hardening
 
 1. **Information Leakage Prevention (Ngăn rò rỉ thông tin hạ tầng):**
-    - Trong môi trường `production`, mã lỗi `500 Internal Server Error` **tuyệt đối không** được đưa raw SQL error, rust panic trace, hay connection strings vào `detail`.
-    - Mọi exception hệ thống chưa xử lý bắt buộc phải map về thông điệp chung:
-        ```ftl
-        err_internal_server = Hệ thống đang gặp gián đoạn tạm thời. Vui lòng thử lại sau.
-        ```
-    - Log chi tiết nguyên nhân gốc kèm `trace_id` chỉ được ghi ở tầng log nội bộ (`tracing::error!`). Khách hàng chỉ nhận được `request_id` để cung cấp cho đội ngũ hỗ trợ kỹ thuật.
+   - Trong môi trường `production`, mã lỗi `500 Internal Server Error` **tuyệt đối không** được đưa raw SQL error, rust panic trace, hay connection strings vào `detail`.
+   - Mọi exception hệ thống chưa xử lý bắt buộc phải map về thông điệp chung:
+
+     ```ftl
+     err_internal_server = Hệ thống đang gặp gián đoạn tạm thời. Vui lòng thử lại sau.
+     ```
+
+   - Log chi tiết nguyên nhân gốc kèm `trace_id` chỉ được ghi ở tầng log nội bộ (`tracing::error!`). Khách hàng chỉ nhận được `request_id` để cung cấp cho đội ngũ hỗ trợ kỹ thuật.
+
 2. **Bảo mật thông tin cá nhân (PII) & Phòng chống Reflected XSS trong `rejected_value`:**
-    - **Ngăn chặn rò rỉ thông tin định danh cá nhân (PII Leak):**
-        - Tuyệt đối không echo lại các trường dữ liệu cá nhân (CCCD/CMND, số hộ chiếu, số điện thoại, email, địa chỉ cư trú, số tài khoản ngân hàng, thẻ tín dụng/CVV, mật khẩu, mã OTP, token...) vào `rejected_value`.
-        - Việc echo dữ liệu PII trong HTTP response body khiến dữ liệu nhạy cảm bị ghi lại vào Ingress/Envoy Access Logs, APM traces (Tempo/Jaeger), WAF logs và browser cache, vi phạm trực tiếp các quy định pháp lý về bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP, GDPR).
-    - **Triệt tiêu nguy cơ Reflected XSS & Content Injection:**
-        - Kẻ tấn công có thể chèn các chuỗi mã độc (ví dụ `<script>alert(1)</script>`, payload SVG, javascript pseudo-protocol) vào form input để server phản chiếu (echo) lại trong `rejected_value`. Nếu Frontend Web (SPA) hoặc WebView hiển thị chuỗi này mà không escape kỹ lưỡng (như dùng `v-html` hoặc `dangerouslySetInnerHTML`), mã độc sẽ thực thi trực tiếp trên phiên người dùng.
-    - **Quy tắc thực thi (Secure-by-Default Enforcement):**
-        - Thuộc tính `rejected_value` được cấu hình là `Option<Value>` với `#[serde(skip_serializing_if = "Option::is_none")]`.
-        - **Mặc định là `None` (omitted)** cho toàn bộ các trường chuỗi tự do (free-form text) và toàn bộ dữ liệu người dùng cá nhân.
-        - Chỉ kích hoạt `rejected_value` cho các giá trị enum hệ thống hữu hạn (ví dụ `user_role`, `order_status`, `payment_method`).
-        - Thay vì echo lại chuỗi vi phạm, cung cấp các metadata định lượng an toàn trong `params` (ví dụ: `{"min": 8, "actual": 4}` hoặc `{"allowed": ["MEMBER", "ADMIN"]}`).
+   - **Ngăn chặn rò rỉ thông tin định danh cá nhân (PII Leak):**
+     - Tuyệt đối không echo lại các trường dữ liệu cá nhân (CCCD/CMND, số hộ chiếu, số điện thoại, email, địa chỉ cư trú, số tài khoản ngân hàng, thẻ tín dụng/CVV, mật khẩu, mã OTP, token...) vào `rejected_value`.
+     - Việc echo dữ liệu PII trong HTTP response body khiến dữ liệu nhạy cảm bị ghi lại vào Ingress/Envoy Access Logs, APM traces (Tempo/Jaeger), WAF logs và browser cache, vi phạm trực tiếp các quy định pháp lý về bảo vệ dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP, GDPR).
+   - **Triệt tiêu nguy cơ Reflected XSS & Content Injection:**
+     - Kẻ tấn công có thể chèn các chuỗi mã độc (ví dụ `<script>alert(1)</script>`, payload SVG, javascript pseudo-protocol) vào form input để server phản chiếu (echo) lại trong `rejected_value`. Nếu Frontend Web (SPA) hoặc WebView hiển thị chuỗi này mà không escape kỹ lưỡng (như dùng `v-html` hoặc `dangerouslySetInnerHTML`), mã độc sẽ thực thi trực tiếp trên phiên người dùng.
+   - **Quy tắc thực thi (Secure-by-Default Enforcement):**
+     - Thuộc tính `rejected_value` được cấu hình là `Option<Value>` với `#[serde(skip_serializing_if = "Option::is_none")]`.
+     - **Mặc định là `None` (omitted)** cho toàn bộ các trường chuỗi tự do (free-form text) và toàn bộ dữ liệu người dùng cá nhân.
+     - Chỉ kích hoạt `rejected_value` cho các giá trị enum hệ thống hữu hạn (ví dụ `user_role`, `order_status`, `payment_method`).
+     - Thay vì echo lại chuỗi vi phạm, cung cấp các metadata định lượng an toàn trong `params` (ví dụ: `{"min": 8, "actual": 4}` hoặc `{"allowed": ["MEMBER", "ADMIN"]}`).
 3. **Deterministic UTC Timestamps:**
-    - Toàn bộ mốc thời gian đều sinh qua `chrono::Utc::now()` và serialize thành định dạng chuẩn RFC 3339 với độ chính xác mili-giây (`YYYY-MM-DDTHH:mm:ss.sssZ`).
+   - Toàn bộ mốc thời gian đều sinh qua `chrono::Utc::now()` và serialize thành định dạng chuẩn RFC 3339 với độ chính xác mili-giây (`YYYY-MM-DDTHH:mm:ss.sssZ`).
 4. **Resilient Memory Lookup & Hot-Reload:**
-    - Tránh việc đọc đĩa (Disk I/O) hoặc truy vấn Database để nạp file i18n trong mỗi request. Fluent bundles phải được tải hoàn toàn vào RAM khi khởi động Pod và quản lý qua con trỏ nguyên tử `ArcSwap` để hot-reload lock-free, không gián đoạn luồng xử lý.
+   - Tránh việc đọc đĩa (Disk I/O) hoặc truy vấn Database để nạp file i18n trong mỗi request. Fluent bundles phải được tải hoàn toàn vào RAM khi khởi động Pod và quản lý qua con trỏ nguyên tử `ArcSwap` để hot-reload lock-free, không gián đoạn luồng xử lý.
 
 ---
 

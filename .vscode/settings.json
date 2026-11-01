@@ -7,9 +7,29 @@
     "files.eol": "\n",
     "files.insertFinalNewline": true,
     "files.trimTrailingWhitespace": true,
+    "files.exclude": {
+        "**/target": true,
+        "**/Cargo.lock": true
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/target/**": true,
+        "**/coverage/**": true,
+        "**/cargo-cache/**": true,
+        "**/Cargo.lock": true
+    },
     "search.exclude": {
         "**/target": true,
-        "**/node_modules": true
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/dist": true,
+        "**/coverage": true,
+        "**/cargo-cache": true,
+        "**/*.profraw": true,
+        "**/*.profdata": true,
+        "**/Cargo.lock": true
     },
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.buildScripts.enable": true,
@@ -40,7 +60,7 @@
     },
     "[markdown]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.tabSize": 4,
+        "editor.tabSize": 2,
         "editor.wordWrap": "on",
         "files.trimTrailingWhitespace": false
     }

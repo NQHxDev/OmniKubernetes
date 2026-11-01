@@ -30,24 +30,24 @@ Trong kiến trúc phân tán (**Microservices Architecture on Kubernetes**), m�
 ## 2. Các nguyên lý thiết kế cốt lõi (Core Architectural Tenets)
 
 1. **Single Source of Truth (Nguồn chân lý duy nhất):**
-    - OpenAPI Specification bắt buộc phải gắn liền với mã nguồn của Service (Code-First bằng annotations/types hoặc Contract-First nằm cùng Git repo của service đó).
-    - Tuyệt đối không cho phép Gateway team viết hộ hay sửa đổi API Spec của các Domain Services.
+   - OpenAPI Specification bắt buộc phải gắn liền với mã nguồn của Service (Code-First bằng annotations/types hoặc Contract-First nằm cùng Git repo của service đó).
+   - Tuyệt đối không cho phép Gateway team viết hộ hay sửa đổi API Spec của các Domain Services.
 
 2. **Decoupled Lifecycle & Dynamic Discovery (Vòng đời độc lập):**
-    - Khi một Backend Service triển khai phiên bản mới hoặc cập nhật DTO, tài liệu tại Gateway phải tự động phản ánh thay đổi mà **không cần sửa code, không cần build lại, và không cần restart API Gateway**.
+   - Khi một Backend Service triển khai phiên bản mới hoặc cập nhật DTO, tài liệu tại Gateway phải tự động phản ánh thay đổi mà **không cần sửa code, không cần build lại, và không cần restart API Gateway**.
 
 3. **Zero Internal Exposure (Không lộ mạng nội bộ):**
-    - Các Backend Services chỉ được giao tiếp qua Kubernetes `ClusterIP` hoặc Internal VPC Subnet.
-    - Trình duyệt Client không bao giờ được phép và không thể kết nối trực tiếp vào IP nội bộ của Backend để lấy tài liệu. Toàn bộ Spec JSON và API Traffic đều phải đi qua API Gateway.
+   - Các Backend Services chỉ được giao tiếp qua Kubernetes `ClusterIP` hoặc Internal VPC Subnet.
+   - Trình duyệt Client không bao giờ được phép và không thể kết nối trực tiếp vào IP nội bộ của Backend để lấy tài liệu. Toàn bộ Spec JSON và API Traffic đều phải đi qua API Gateway.
 
 4. **Strict Path-Prefix Awareness (Tôn trọng tiền tố định tuyến):**
-    - Backend service đứng sau Gateway tại đường dẫn prefix (ví dụ `/api/v1/orders`). Khi thực hiện tính năng "Try It Out" trên Swagger UI, request phải trỏ chính xác về `/api/v1/orders/...`, không bao giờ được trỏ nhầm về root `/...`.
+   - Backend service đứng sau Gateway tại đường dẫn prefix (ví dụ `/api/v1/orders`). Khi thực hiện tính năng "Try It Out" trên Swagger UI, request phải trỏ chính xác về `/api/v1/orders/...`, không bao giờ được trỏ nhầm về root `/...`.
 
 5. **Environment Isolation & Security Hardening:**
-    - Swagger UI và Spec endpoints phải được kiểm soát nghiêm ngặt theo môi trường:
-        - **Local / Dev**: Bật mở tự do.
-        - **Staging / UAT**: Bật nhưng bảo vệ bằng VPN / IP Whitelist hoặc Gateway Basic Auth.
-        - **Production**: **Mặc định TẮT hoàn toàn**. Đối với External Open API, phải sử dụng Public Developer Portal riêng biệt đã qua lọc bỏ internal endpoints.
+   - Swagger UI và Spec endpoints phải được kiểm soát nghiêm ngặt theo môi trường:
+     - **Local / Dev**: Bật mở tự do.
+     - **Staging / UAT**: Bật nhưng bảo vệ bằng VPN / IP Whitelist hoặc Gateway Basic Auth.
+     - **Production**: **Mặc định TẮT hoàn toàn**. Đối với External Open API, phải sử dụng Public Developer Portal riêng biệt đã qua lọc bỏ internal endpoints.
 
 ---
 
@@ -130,12 +130,12 @@ Mỗi Backend Microservice có trách nhiệm tự sinh OpenAPI Specification t�
 ### 4.1. Quy tắc cấu hình Backend
 
 1. **Chỉ sinh Spec JSON/YAML, tắt Swagger UI HTML:**
-    - Việc load HTML, JS, CSS của Swagger UI trên từng pod backend gây lãng phí bộ nhớ RAM (khoảng 20–50MB heap cho UI assets) và mở rộng bề mặt tấn công bảo mật không cần thiết.
+   - Việc load HTML, JS, CSS của Swagger UI trên từng pod backend gây lãng phí bộ nhớ RAM (khoảng 20–50MB heap cho UI assets) và mở rộng bề mặt tấn công bảo mật không cần thiết.
 2. **Kích hoạt hỗ trợ Forwarded Headers (RFC 7239):**
-    - Backend phải đọc được các header `X-Forwarded-Prefix`, `X-Forwarded-Host`, `X-Forwarded-Proto` do Gateway truyền vào để tự động tính toán Server Base URL chính xác.
+   - Backend phải đọc được các header `X-Forwarded-Prefix`, `X-Forwarded-Host`, `X-Forwarded-Proto` do Gateway truyền vào để tự động tính toán Server Base URL chính xác.
 3. **Thống nhất tiền tố định tuyến với chiến lược Ingress Gateway:**
-    - **Khi triển khai Chiến lược A (Khuyên dùng - Strip Prefix):** Backend đăng ký các router độc lập tại root (ví dụ `/v3/api-docs`, `/orders`, `/login`). Backend không cần gắn cứng tiền tố `/api/v1/...` trong code, mà dựa vào header `X-Forwarded-Prefix` do Ingress tiêm vào (hoặc khai báo `servers` tương đối) để Swagger UI tính toán URL chính xác khi gọi qua Gateway.
-    - **Khi triển khai Chiến lược B (Preserve Prefix):** Backend bắt buộc phải mount toàn bộ routes (kể cả `/v3/api-docs`) dưới tiền tố định tuyến đầy đủ `/api/v1/<service>/...`.
+   - **Khi triển khai Chiến lược A (Khuyên dùng - Strip Prefix):** Backend đăng ký các router độc lập tại root (ví dụ `/v3/api-docs`, `/orders`, `/login`). Backend không cần gắn cứng tiền tố `/api/v1/...` trong code, mà dựa vào header `X-Forwarded-Prefix` do Ingress tiêm vào (hoặc khai báo `servers` tương đối) để Swagger UI tính toán URL chính xác khi gọi qua Gateway.
+   - **Khi triển khai Chiến lược B (Preserve Prefix):** Backend bắt buộc phải mount toàn bộ routes (kể cả `/v3/api-docs`) dưới tiền tố định tuyến đầy đủ `/api/v1/<service>/...`.
 
 ### 4.2. Code mẫu chuẩn theo từng Tech Stack
 
@@ -185,25 +185,25 @@ import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule);
 
-    // Cấu hình OpenAPI Spec
-    const config = new DocumentBuilder()
-        .setTitle("Order Microservice")
-        .setDescription("Order Domain API Specifications")
-        .setVersion("1.0.0")
-        .addServer("/api/v1/orders", "Through OmniKubernetes API Gateway")
-        .addBearerAuth()
-        .build();
+  // Cấu hình OpenAPI Spec
+  const config = new DocumentBuilder()
+    .setTitle("Order Microservice")
+    .setDescription("Order Domain API Specifications")
+    .setVersion("1.0.0")
+    .addServer("/api/v1/orders", "Through OmniKubernetes API Gateway")
+    .addBearerAuth()
+    .build();
 
-    const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config);
 
-    // Chỉ expose raw JSON, không gọi SwaggerModule.setup() để mount HTML
-    app.getHttpAdapter().get("/v3/api-docs", (req, res) => {
-        res.json(document);
-    });
+  // Chỉ expose raw JSON, không gọi SwaggerModule.setup() để mount HTML
+  app.getHttpAdapter().get("/v3/api-docs", (req, res) => {
+    res.json(document);
+  });
 
-    await app.listen(8080);
+  await app.listen(8080);
 }
 bootstrap();
 ```
@@ -214,17 +214,17 @@ Cấu hình trong `application.yml`:
 
 ```yaml
 server:
-    port: 8080
-    # Kích hoạt framework tự động nhận diện X-Forwarded-Prefix từ Gateway
-    forward-headers-strategy: framework
+  port: 8080
+  # Kích hoạt framework tự động nhận diện X-Forwarded-Prefix từ Gateway
+  forward-headers-strategy: framework
 
 springdoc:
-    api-docs:
-        enabled: true
-        path: /v3/api-docs
-    # Tắt Swagger UI HTML ở backend
-    swagger-ui:
-        enabled: false
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  # Tắt Swagger UI HTML ở backend
+  swagger-ui:
+    enabled: false
 ```
 
 ---
@@ -239,33 +239,33 @@ File cấu hình này cho phép Swagger UI hiển thị Dropdown danh sách toà
 
 ```json
 {
-    "urls": [
-        {
-            "name": "01. Auth & IAM Service",
-            "url": "/api/v1/auth/v3/api-docs"
-        },
-        {
-            "name": "02. Order Processing Service",
-            "url": "/api/v1/orders/v3/api-docs"
-        },
-        {
-            "name": "03. Payment & Ledger Service",
-            "url": "/api/v1/payments/v3/api-docs"
-        },
-        {
-            "name": "04. Product & Catalog Service",
-            "url": "/api/v1/products/v3/api-docs"
-        },
-        {
-            "name": "05. Notification Service",
-            "url": "/api/v1/notifications/v3/api-docs"
-        }
-    ],
-    "layout": "StandaloneLayout",
-    "deepLinking": true,
-    "persistAuthorization": true,
-    "displayRequestDuration": true,
-    "filter": true
+  "urls": [
+    {
+      "name": "01. Auth & IAM Service",
+      "url": "/api/v1/auth/v3/api-docs"
+    },
+    {
+      "name": "02. Order Processing Service",
+      "url": "/api/v1/orders/v3/api-docs"
+    },
+    {
+      "name": "03. Payment & Ledger Service",
+      "url": "/api/v1/payments/v3/api-docs"
+    },
+    {
+      "name": "04. Product & Catalog Service",
+      "url": "/api/v1/products/v3/api-docs"
+    },
+    {
+      "name": "05. Notification Service",
+      "url": "/api/v1/notifications/v3/api-docs"
+    }
+  ],
+  "layout": "StandaloneLayout",
+  "deepLinking": true,
+  "persistAuthorization": true,
+  "displayRequestDuration": true,
+  "filter": true
 }
 ```
 
@@ -287,64 +287,64 @@ File cấu hình này cho phép Swagger UI hiển thị Dropdown danh sách toà
 apiVersion: v1
 kind: ConfigMap
 metadata:
-    name: swagger-ui-config
-    namespace: omni-system
+  name: swagger-ui-config
+  namespace: omni-system
 data:
-    swagger-config.json: |
-        {
-          "urls": [
-            {"name": "Auth Service", "url": "/api/v1/auth/v3/api-docs"},
-            {"name": "Order Service", "url": "/api/v1/orders/v3/api-docs"},
-            {"name": "Payment Service", "url": "/api/v1/payments/v3/api-docs"},
-            {"name": "Product Service", "url": "/api/v1/products/v3/api-docs"}
-          ],
-          "deepLinking": true,
-          "persistAuthorization": true,
-          "displayRequestDuration": true
-        }
+  swagger-config.json: |
+    {
+      "urls": [
+        {"name": "Auth Service", "url": "/api/v1/auth/v3/api-docs"},
+        {"name": "Order Service", "url": "/api/v1/orders/v3/api-docs"},
+        {"name": "Payment Service", "url": "/api/v1/payments/v3/api-docs"},
+        {"name": "Product Service", "url": "/api/v1/products/v3/api-docs"}
+      ],
+      "deepLinking": true,
+      "persistAuthorization": true,
+      "displayRequestDuration": true
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: swagger-ui-aggregator
-    namespace: omni-system
+  name: swagger-ui-aggregator
+  namespace: omni-system
 spec:
-    replicas: 1
-    selector:
-        matchLabels:
-            app: swagger-ui-aggregator
-    template:
-        metadata:
-            labels:
-                app: swagger-ui-aggregator
-        spec:
-            containers:
-                - name: swagger-ui
-                  image: swaggerapi/swagger-ui:v5.17.14
-                  ports:
-                      - containerPort: 8080
-                  env:
-                      - name: CONFIG_URL
-                        value: "/swagger-ui/config/swagger-config.json"
-                  volumeMounts:
-                      - name: config-volume
-                        mountPath: /usr/share/nginx/html/swagger-ui/config
-            volumes:
-                - name: config-volume
-                  configMap:
-                      name: swagger-ui-config
+  replicas: 1
+  selector:
+    matchLabels:
+      app: swagger-ui-aggregator
+  template:
+    metadata:
+      labels:
+        app: swagger-ui-aggregator
+    spec:
+      containers:
+        - name: swagger-ui
+          image: swaggerapi/swagger-ui:v5.17.14
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CONFIG_URL
+              value: "/swagger-ui/config/swagger-config.json"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/swagger-ui/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: swagger-ui-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-    name: swagger-ui-service
-    namespace: omni-system
+  name: swagger-ui-service
+  namespace: omni-system
 spec:
-    selector:
-        app: swagger-ui-aggregator
-    ports:
-        - port: 8080
-          targetPort: 8080
+  selector:
+    app: swagger-ui-aggregator
+  ports:
+    - port: 8080
+      targetPort: 8080
 ```
 
 #### 2. Cấu hình NGINX Ingress Routing & Chiến lược Path Routing
@@ -354,32 +354,32 @@ spec:
 Khi triển khai API Documentation và Ingress Routing trên môi trường Kubernetes thực tế, có hai lỗi kỹ thuật kinh điển thường xuyên gây ra mã lỗi `404 Not Found`:
 
 1. **Lỗi biến `$uri` trong NGINX Ingress (`proxy_set_header X-Forwarded-Prefix $uri;`):**
-    - Biến `$uri` trong NGINX phản ánh **toàn bộ request path hiện tại** đã qua chuẩn hóa (ví dụ: `/api/v1/orders/v3/api-docs` hoặc `/api/v1/orders/123/items`), hoàn toàn **không phải** là routing prefix của microservice (`/api/v1/orders`).
-    - Nếu gửi header `X-Forwarded-Prefix: $uri`, Backend sẽ nhận prefix sai lệch theo từng request gọi đến. Khi Backend hoặc Swagger UI dựa vào header này để dựng Base URL, đường dẫn sẽ bị nhân đôi hoặc méo mó (ví dụ: `/api/v1/orders/123/items/orders/123/items`), gây lỗi `404 Not Found` ngay lập tức.
-    - **Nguyên tắc chuẩn:** Header `X-Forwarded-Prefix` bắt buộc phải là tiền tố route gốc cố định của microservice đó (ví dụ: `/api/v1/orders`, `/api/v1/auth`).
+   - Biến `$uri` trong NGINX phản ánh **toàn bộ request path hiện tại** đã qua chuẩn hóa (ví dụ: `/api/v1/orders/v3/api-docs` hoặc `/api/v1/orders/123/items`), hoàn toàn **không phải** là routing prefix của microservice (`/api/v1/orders`).
+   - Nếu gửi header `X-Forwarded-Prefix: $uri`, Backend sẽ nhận prefix sai lệch theo từng request gọi đến. Khi Backend hoặc Swagger UI dựa vào header này để dựng Base URL, đường dẫn sẽ bị nhân đôi hoặc méo mó (ví dụ: `/api/v1/orders/123/items/orders/123/items`), gây lỗi `404 Not Found` ngay lập tức.
+   - **Nguyên tắc chuẩn:** Header `X-Forwarded-Prefix` bắt buộc phải là tiền tố route gốc cố định của microservice đó (ví dụ: `/api/v1/orders`, `/api/v1/auth`).
 
 2. **Lỗi thiếu Rewrite Path (`nginx.ingress.kubernetes.io/rewrite-target: /$2`):**
-    - Cấu hình Ingress sử dụng Regex matching: `- path: /api/v1/auth(/|$)(.*)`.
-    - Nếu thiếu annotation `nginx.ingress.kubernetes.io/rewrite-target: /$2`, NGINX Ingress sẽ chuyển tiếp **nguyên văn** URI `/api/v1/auth/v3/api-docs` vào Backend pod `auth-service`.
-    - Trong khi đó, Backend (Axum, NestJS, Spring Boot tại Mục 4.2) chỉ đăng ký router nội bộ tại `/v3/api-docs` (hoặc `/login`, `/orders`...).
-    - **Hậu quả:** Backend pod trả về `404 Not Found`. API Gateway không thể kéo được OpenAPI JSON spec của Backend, khiến Swagger UI báo lỗi "Failed to load API definition" ngay khi mở trang.
+   - Cấu hình Ingress sử dụng Regex matching: `- path: /api/v1/auth(/|$)(.*)`.
+   - Nếu thiếu annotation `nginx.ingress.kubernetes.io/rewrite-target: /$2`, NGINX Ingress sẽ chuyển tiếp **nguyên văn** URI `/api/v1/auth/v3/api-docs` vào Backend pod `auth-service`.
+   - Trong khi đó, Backend (Axum, NestJS, Spring Boot tại Mục 4.2) chỉ đăng ký router nội bộ tại `/v3/api-docs` (hoặc `/login`, `/orders`...).
+   - **Hậu quả:** Backend pod trả về `404 Not Found`. API Gateway không thể kéo được OpenAPI JSON spec của Backend, khiến Swagger UI báo lỗi "Failed to load API definition" ngay khi mở trang.
 
 3. **Phạm vi tác dụng của Annotation trong Ingress Controller (Ingress Resource-Level Scope):**
-    - Trong `ingress-nginx`, các annotation như `nginx.ingress.kubernetes.io/rewrite-target` và `nginx.ingress.kubernetes.io/x-forwarded-prefix` có phạm vi tác dụng trên **toàn bộ tài nguyên Ingress**, không thể cấu hình riêng rẽ cho từng item trong mảng `paths` nếu các path có tiền tố khác nhau.
-    - Gom chung nhiều microservices với các routing prefix khác nhau (`/api/v1/auth`, `/api/v1/orders`) vào một Ingress resource duy nhất sẽ gây xung đột giá trị header `X-Forwarded-Prefix`.
-    - **Giải pháp kiến trúc chuẩn:** Áp dụng mô hình **Decoupled Ingress per Microservice Pattern** (mỗi service sở hữu một Ingress manifest riêng biệt) nhằm đảm bảo tính tự trị (Microservice Autonomy) và cấu hình chính xác từng route.
+   - Trong `ingress-nginx`, các annotation như `nginx.ingress.kubernetes.io/rewrite-target` và `nginx.ingress.kubernetes.io/x-forwarded-prefix` có phạm vi tác dụng trên **toàn bộ tài nguyên Ingress**, không thể cấu hình riêng rẽ cho từng item trong mảng `paths` nếu các path có tiền tố khác nhau.
+   - Gom chung nhiều microservices với các routing prefix khác nhau (`/api/v1/auth`, `/api/v1/orders`) vào một Ingress resource duy nhất sẽ gây xung đột giá trị header `X-Forwarded-Prefix`.
+   - **Giải pháp kiến trúc chuẩn:** Áp dụng mô hình **Decoupled Ingress per Microservice Pattern** (mỗi service sở hữu một Ingress manifest riêng biệt) nhằm đảm bảo tính tự trị (Microservice Autonomy) và cấu hình chính xác từng route.
 
 ---
 
 ##### B. Thống nhất 2 chiến lược kiến trúc (Architecture Strategies)
 
-| Tiêu chí | Chiến lược A: Gateway Rewrite (Strip Prefix) - Khuyên dùng | Chiến lược B: Preserve Prefix (Backend-Aware Routing) |
-| :--- | :--- | :--- |
-| **Cơ chế hoạt động** | Ingress gọt bỏ tiền tố `/api/v1/<service>` trước khi chuyển tiếp vào Backend pod (`/api/v1/orders/v3/api-docs` -> `/v3/api-docs`). Gateway chủ động tiêm header `X-Forwarded-Prefix: /api/v1/<service>`. | Ingress giữ nguyên toàn bộ request path (`/api/v1/orders/v3/api-docs` giữ nguyên khi vào pod). Không dùng rewrite target. |
-| **Trách nhiệm Backend** | Backend code độc lập hoàn toàn với routing prefix của Gateway. Chỉ cần lắng nghe tại `/v3/api-docs` và các root endpoints (`/`, `/123`). | Backend bắt buộc phải tự mount toàn bộ router và OpenAPI doc endpoint dưới tiền tố đầy đủ `/api/v1/<service>/...`. |
-| **Tính độc lập (Decoupling)** | **Rất cao (Loose Coupling):** Có thể chạy test service độc lập ở Local, Docker Compose hoặc K8s mà không cần đổi base path trong code. Thay đổi Gateway routing không ảnh hưởng code backend. | **Thấp (Tight Coupling):** Backend gắn chặt với cấu trúc URL bên ngoài của Gateway. Nếu đổi prefix routing, phải sửa code và redeploy backend. |
-| **Cấu hình Ingress K8s** | Cần annotation `rewrite-target: /$2` và `x-forwarded-prefix`. Khuyến nghị tách Ingress theo từng microservice để tránh xung đột header. | Ingress cấu hình đơn giản (`pathType: Prefix`), có thể gộp chung trong 1 Ingress manifest duy nhất. |
-| **Khuyến nghị áp dụng** | **Chuẩn khuyến nghị (Recommended Standard)** cho toàn bộ hệ thống OmniKubernetes. | Phương án thay thế (Alternative) nếu framework backend hỗ trợ cấu hình context-path tự động (ví dụ `server.servlet.context-path` trong Spring Boot). |
+| Tiêu chí                      | Chiến lược A: Gateway Rewrite (Strip Prefix) - Khuyên dùng                                                                                                                                               | Chiến lược B: Preserve Prefix (Backend-Aware Routing)                                                                                                |
+| :---------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cơ chế hoạt động**          | Ingress gọt bỏ tiền tố `/api/v1/<service>` trước khi chuyển tiếp vào Backend pod (`/api/v1/orders/v3/api-docs` -> `/v3/api-docs`). Gateway chủ động tiêm header `X-Forwarded-Prefix: /api/v1/<service>`. | Ingress giữ nguyên toàn bộ request path (`/api/v1/orders/v3/api-docs` giữ nguyên khi vào pod). Không dùng rewrite target.                            |
+| **Trách nhiệm Backend**       | Backend code độc lập hoàn toàn với routing prefix của Gateway. Chỉ cần lắng nghe tại `/v3/api-docs` và các root endpoints (`/`, `/123`).                                                                 | Backend bắt buộc phải tự mount toàn bộ router và OpenAPI doc endpoint dưới tiền tố đầy đủ `/api/v1/<service>/...`.                                   |
+| **Tính độc lập (Decoupling)** | **Rất cao (Loose Coupling):** Có thể chạy test service độc lập ở Local, Docker Compose hoặc K8s mà không cần đổi base path trong code. Thay đổi Gateway routing không ảnh hưởng code backend.            | **Thấp (Tight Coupling):** Backend gắn chặt với cấu trúc URL bên ngoài của Gateway. Nếu đổi prefix routing, phải sửa code và redeploy backend.       |
+| **Cấu hình Ingress K8s**      | Cần annotation `rewrite-target: /$2` và `x-forwarded-prefix`. Khuyến nghị tách Ingress theo từng microservice để tránh xung đột header.                                                                  | Ingress cấu hình đơn giản (`pathType: Prefix`), có thể gộp chung trong 1 Ingress manifest duy nhất.                                                  |
+| **Khuyến nghị áp dụng**       | **Chuẩn khuyến nghị (Recommended Standard)** cho toàn bộ hệ thống OmniKubernetes.                                                                                                                        | Phương án thay thế (Alternative) nếu framework backend hỗ trợ cấu hình context-path tự động (ví dụ `server.servlet.context-path` trong Spring Boot). |
 
 ---
 
@@ -547,57 +547,60 @@ spec:
 ### Bẫy 1: Bấm "Execute" (Try It Out) bị lỗi 404 Not Found
 
 - **Nguyên nhân gốc rễ:**
-    1. Swagger UI gửi request đến gốc `/orders/123` thay vì qua tiền tố Gateway `/api/v1/orders/orders/123` (hoặc `/api/v1/orders/123`).
-    2. Ingress cấu hình sai header `X-Forwarded-Prefix $uri` khiến prefix bị biến động theo từng endpoint thay vì giữ cố định `/api/v1/orders`.
-    3. Ingress thiếu quy tắc `rewrite-target: /$2`, khiến Gateway chuyển tiếp nguyên xi URI có prefix vào backend chỉ lắng nghe root path.
+  1. Swagger UI gửi request đến gốc `/orders/123` thay vì qua tiền tố Gateway `/api/v1/orders/orders/123` (hoặc `/api/v1/orders/123`).
+  2. Ingress cấu hình sai header `X-Forwarded-Prefix $uri` khiến prefix bị biến động theo từng endpoint thay vì giữ cố định `/api/v1/orders`.
+  3. Ingress thiếu quy tắc `rewrite-target: /$2`, khiến Gateway chuyển tiếp nguyên xi URI có prefix vào backend chỉ lắng nghe root path.
 - **Cách khắc phục chuẩn:**
-    1. **Tại Ingress Gateway:** Luôn cấu hình gán cứng header `nginx.ingress.kubernetes.io/x-forwarded-prefix: /api/v1/<service>` đi kèm annotation `rewrite-target: /$2` theo đúng **Chiến lược A**.
-    2. **Tại OpenAPI Spec Backend:** Trong trường hợp framework Backend không tự động đọc header forwarded, cấu hình tường minh trường `servers` trong OpenAPI Specification của service:
-        ```yaml
-        servers:
-            - url: /api/v1/orders
-              description: Relative path via OmniKubernetes API Gateway
-        ```
-        _Lưu ý: Luôn dùng đường dẫn tương đối `/api/v1/orders` thay vì gắn cứng cả domain `https://api.omnikubernetes.com` để spec tương thích linh hoạt trên cả Local, Dev, Staging và Production._
+  1. **Tại Ingress Gateway:** Luôn cấu hình gán cứng header `nginx.ingress.kubernetes.io/x-forwarded-prefix: /api/v1/<service>` đi kèm annotation `rewrite-target: /$2` theo đúng **Chiến lược A**.
+  2. **Tại OpenAPI Spec Backend:** Trong trường hợp framework Backend không tự động đọc header forwarded, cấu hình tường minh trường `servers` trong OpenAPI Specification của service:
+
+     ```yaml
+     servers:
+       - url: /api/v1/orders
+         description: Relative path via OmniKubernetes API Gateway
+     ```
+
+     _Lưu ý: Luôn dùng đường dẫn tương đối `/api/v1/orders` thay vì gắn cứng cả domain `https://api.omnikubernetes.com` để spec tương thích linh hoạt trên cả Local, Dev, Staging và Production._
 
 ### Bẫy 2: Lỗi CORS khi tải OpenAPI Spec
 
 - **Hiện tượng:** Mở Swagger UI thì trống rỗng, Console trình duyệt báo đỏ: `Access to fetch at ... from origin ... has been blocked by CORS policy`.
 - **Nguyên nhân:** Swagger UI host ở domain A nhưng cấu hình URL spec lại trỏ sang domain B hoặc port khác.
 - **Cách khắc phục chuẩn:** **Không bao giờ dùng Absolute URL khác domain.** Luôn cấu hình URL trong `swagger-config.json` dưới dạng Relative Path trên cùng domain của Gateway:
-    - Đúng: `"url": "/api/v1/orders/v3/api-docs"`
-    - Sai: `"url": "http://order-internal-service:8080/v3/api-docs"`
+  - Đúng: `"url": "/api/v1/orders/v3/api-docs"`
+  - Sai: `"url": "http://order-internal-service:8080/v3/api-docs"`
 
 ### Bẫy 3: Đăng nhập một lần dùng cho tất cả (JWT Bearer Persistence)
 
 - **Vấn đề:** Mỗi lần đổi service trên dropdown, dev phải copy/paste lại Authorization Token rất khó chịu.
 - **Cách khắc phục:**
-    - Kích hoạt `persistAuthorization: true` trong cấu hình Swagger UI.
-    - Đồng nhất tên Security Scheme trên toàn bộ các microservices: Tất cả đều đặt tên scheme là `BearerAuth` (chuẩn OpenAPI Security Requirement):
-        ```yaml
-        components:
-            securitySchemes:
-                BearerAuth:
-                    type: http
-                    scheme: bearer
-                    bearerFormat: JWT
-        ```
+  - Kích hoạt `persistAuthorization: true` trong cấu hình Swagger UI.
+  - Đồng nhất tên Security Scheme trên toàn bộ các microservices: Tất cả đều đặt tên scheme là `BearerAuth` (chuẩn OpenAPI Security Requirement):
+
+    ```yaml
+    components:
+      securitySchemes:
+        BearerAuth:
+          type: http
+          scheme: bearer
+          bearerFormat: JWT
+    ```
 
 ### Bẫy 4: Thất thoát dữ liệu nhạy cảm & Lộ API nội bộ (Security Leakage)
 
 - **Vấn đề:** Các endpoint nội bộ như `/admin/metrics`, `/internal/reindex-db` bị phơi bày ra tài liệu.
 - **Cách khắc phục:**
-    - Áp dụng OpenAPI Grouping / Tagging. Chỉ export các endpoint công khai ra Group `public-v1`.
-    - Giấu hoàn toàn các route nội bộ khỏi Swagger Generator bằng annotation (ví dụ trong Rust utoipa: không gắn `#[utoipa::path]` vào private handlers).
+  - Áp dụng OpenAPI Grouping / Tagging. Chỉ export các endpoint công khai ra Group `public-v1`.
+  - Giấu hoàn toàn các route nội bộ khỏi Swagger Generator bằng annotation (ví dụ trong Rust utoipa: không gắn `#[utoipa::path]` vào private handlers).
 
 ### Bẫy 5: Bảo mật môi trường Production (Production Hardening)
 
 - **Nguyên tắc:** **Môi trường Production tuyệt đối không mở Swagger UI công khai.**
 - **Giải pháp:**
-    1. Trong Ingress Production: Không tạo ingress path `/swagger-ui`.
-    2. Nếu bắt buộc cần cho đối tác hoặc nội bộ truy cập:
-        - Kích hoạt `Basic Authentication` hoặc `OAuth2 Proxy` chặn trước route `/swagger-ui` ngay tại Ingress.
-        - Giới hạn IP Whitelist (chỉ cho phép IP VPN của công ty).
+  1. Trong Ingress Production: Không tạo ingress path `/swagger-ui`.
+  2. Nếu bắt buộc cần cho đối tác hoặc nội bộ truy cập:
+     - Kích hoạt `Basic Authentication` hoặc `OAuth2 Proxy` chặn trước route `/swagger-ui` ngay tại Ingress.
+     - Giới hạn IP Whitelist (chỉ cho phép IP VPN của công ty).
 
 ---
 

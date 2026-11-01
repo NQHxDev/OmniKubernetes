@@ -19,7 +19,8 @@ pub use i18n::{
     match_canonical_locale, spawn_sighup_reload_listener,
 };
 pub use middleware::{
-    RequestContext, TraceContext, parse_traceparent, request_context_middleware, timing_middleware,
+    RequestContext, TraceContext, inject_egress_headers, observability_middleware,
+    parse_traceparent, request_context_middleware, timing_middleware,
 };
 pub use response::{
     ApiResponse, ApiResponseBuilder, CursorPaginationMeta, OffsetPaginationMeta,

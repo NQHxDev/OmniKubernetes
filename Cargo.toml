@@ -25,7 +25,7 @@ omni-metrics = { path = "libs/metrics" }
 # Web Framework & HTTP Networking
 axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.5", features = ["util", "timeout", "load-shed"] }
-tower-http = { version = "0.6", features = [
+tower-http = { version = "0.7.1", features = [
     "trace",
     "cors",
     "compression-full",
@@ -33,16 +33,16 @@ tower-http = { version = "0.6", features = [
     "util",
 ] }
 hyper = { version = "1.6", features = ["full"] }
-reqwest = { version = "0.12", default-features = false, features = [
+reqwest = { version = "0.13.5", default-features = false, features = [
     "json",
-    "rustls-tls",
+    "rustls",
 ] }
 
 # Concurrency & Synchronization
 arc-swap = "1.7"
 
 # Internationalization & Localization (Mozilla Fluent & BCP 47)
-fluent-bundle = "0.15"
+fluent-bundle = "0.16"
 intl-memoizer = "0.5"
 unic-langid = "0.9"
 
@@ -65,17 +65,22 @@ tracing-subscriber = { version = "0.3", features = [
     "fmt",
 ] }
 tracing-appender = "0.2"
+opentelemetry = "0.33.1"
+opentelemetry_sdk = { version = "0.33.1", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.33.1", features = ["grpc-tonic"] }
+tracing-opentelemetry = "0.34"
+tonic = "0.14.9"
 
 # Metrics & Monitoring
 metrics = "0.24"
-metrics-exporter-prometheus = "0.16"
+metrics-exporter-prometheus = "0.18.3"
 
 # OpenAPI & API Documentation
-utoipa = { version = "5.3", features = ["axum_extras", "chrono", "uuid"] }
-utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+utoipa = { version = "6.0", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "10.0.2", features = ["axum"] }
 
 # Database & Storage
-sqlx = { version = "0.8", default-features = false, features = [
+sqlx = { version = "0.9", default-features = false, features = [
     "runtime-tokio",
     "tls-rustls",
     "postgres",
@@ -84,7 +89,7 @@ sqlx = { version = "0.8", default-features = false, features = [
     "macros",
     "migrate",
 ] }
-redis = { version = "0.28", features = [
+redis = { version = "1.8.1", features = [
     "tokio-comp",
     "connection-manager",
     "aio",
@@ -99,8 +104,8 @@ chrono = { version = "0.4", features = ["serde", "clock"] }
 
 # Identity & Security
 uuid = { version = "1.13", features = ["v4", "v7", "serde"] }
-jsonwebtoken = "9.3"
-argon2 = "0.5"
+jsonwebtoken = "11.1.0"
+argon2 = "0.6"
 
 # Environment & Configuration
 dotenvy = "0.15"
