@@ -16,8 +16,8 @@ observability:
 
 database:
   ssl_mode: "require"
-  max_connections: 50
-  min_connections: 10
+  max_connections: 15
+  min_connections: 2
   acquire_timeout_secs: 3
   auto_migrate: false
 

@@ -387,3 +387,90 @@ fn test_custom_service_config_extension() {
         other => panic!("Expected validation failure for custom field, got: {other:?}"),
     }
 }
+
+#[test]
+fn test_database_advanced_guardrails() {
+    // 1. Timeout Budget: acquire (5s) + statement (30s) = 35s >= request_timeout (30s)
+    let budget_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("budget-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__DATABASE__ENABLED", "true"),
+            ("OMNI__DATABASE__ACQUIRE_TIMEOUT_SECS", "5"),
+            ("OMNI__DATABASE__STATEMENT_TIMEOUT_MS", "30000"),
+            ("OMNI__SERVER__REQUEST_TIMEOUT_SECS", "30"),
+        ])
+        .load();
+
+    match budget_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues.iter().any(|i| i.code == "CFG_DB_TIMEOUT_BUDGET"),
+                "Must reject timeout sum exceeding request timeout budget"
+            );
+        }
+        other => panic!("Expected CFG_DB_TIMEOUT_BUDGET, got: {other:?}"),
+    }
+
+    // 2. Lifetime Order: idle (1800s) >= max_lifetime (1800s)
+    let order_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("order-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__DATABASE__ENABLED", "true"),
+            ("OMNI__DATABASE__IDLE_TIMEOUT_SECS", "1800"),
+            ("OMNI__DATABASE__MAX_LIFETIME_SECS", "1800"),
+        ])
+        .load();
+
+    match order_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues.iter().any(|i| i.code == "CFG_DB_LIFETIME_ORDER"),
+                "Must reject idle_timeout >= max_lifetime"
+            );
+        }
+        other => panic!("Expected CFG_DB_LIFETIME_ORDER, got: {other:?}"),
+    }
+
+    // 3. Staging/Prod requires non-zero statement_timeout_ms
+    let stmt_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("staging-service")
+        .with_environment(AppEnvironment::Staging)
+        .with_env_vars([
+            ("OMNI__DATABASE__ENABLED", "true"),
+            ("OMNI__DATABASE__STATEMENT_TIMEOUT_MS", "0"),
+        ])
+        .load();
+
+    match stmt_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues
+                    .iter()
+                    .any(|i| i.code == "CFG_DB_STATEMENT_TIMEOUT_REQUIRED"),
+                "Must require non-zero statement_timeout in staging/prod"
+            );
+        }
+        other => panic!("Expected CFG_DB_STATEMENT_TIMEOUT_REQUIRED, got: {other:?}"),
+    }
+
+    // 4. Invalid application_name (contains invalid characters or > 30 chars)
+    let app_name_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("app-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__DATABASE__ENABLED", "true"),
+            (
+                "OMNI__DATABASE__APPLICATION_NAME",
+                "INVALID_NAME_WITH_CAPS!",
+            ),
+        ])
+        .load();
+
+    match app_name_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues.iter().any(|i| i.code == "CFG_DB_APPLICATION_NAME"),
+                "Must reject invalid application_name format"
+            );
+        }
+        other => panic!("Expected CFG_DB_APPLICATION_NAME, got: {other:?}"),
+    }
+}

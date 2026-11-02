@@ -17,7 +17,10 @@ pub mod secret;
 pub mod server;
 
 pub use auth::{AuthConfig, JwtAlgorithm};
-pub use database::{DatabaseConfig, DbSslMode};
+pub use database::{
+    ConnectRetryConfig, DatabaseConfig, DbSslMode, MigrationConfig, MigrationMode, SentinelConfig,
+    TraceCorrelation,
+};
 pub use env::{AppEnvironment, K8sRuntimeMeta};
 pub use error::{ConfigError, ConfigValidationIssue, field_path_to_env_var};
 pub use i18n::I18nConfig;
@@ -221,6 +224,12 @@ where
             return;
         }
 
+        self.validate_database_pool_and_timeouts(issues);
+        self.validate_database_application_name(issues);
+        self.validate_database_security(issues);
+    }
+
+    fn validate_database_pool_and_timeouts(&self, issues: &mut Vec<ConfigValidationIssue>) {
         if self.database.min_connections > self.database.max_connections {
             issues.push(ConfigValidationIssue {
                 field_path: "database.min_connections".to_string(),
@@ -245,6 +254,66 @@ where
             });
         }
 
+        if self.database.statement_timeout_ms > 0
+            && (self.database.acquire_timeout_secs * 1000 + self.database.statement_timeout_ms)
+                >= (self.server.request_timeout_secs * 1000)
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "database.statement_timeout_ms".to_string(),
+                code: "CFG_DB_TIMEOUT_BUDGET".to_string(),
+                message: format!(
+                    "acquire_timeout ({}ms) + statement_timeout ({}ms) must be less than server.request_timeout ({}ms)",
+                    self.database.acquire_timeout_secs * 1000,
+                    self.database.statement_timeout_ms,
+                    self.server.request_timeout_secs * 1000
+                ),
+                env_var_hint: "OMNI__DATABASE__STATEMENT_TIMEOUT_MS".to_string(),
+            });
+        }
+
+        if self.database.idle_timeout_secs >= self.database.max_lifetime_secs {
+            issues.push(ConfigValidationIssue {
+                field_path: "database.idle_timeout_secs".to_string(),
+                code: "CFG_DB_LIFETIME_ORDER".to_string(),
+                message: format!(
+                    "idle_timeout_secs ({}s) must be strictly less than max_lifetime_secs ({}s)",
+                    self.database.idle_timeout_secs, self.database.max_lifetime_secs
+                ),
+                env_var_hint: "OMNI__DATABASE__IDLE_TIMEOUT_SECS".to_string(),
+            });
+        }
+
+        if self.service.environment != AppEnvironment::Dev
+            && (self.database.statement_timeout_ms == 0
+                || self.database.idle_in_transaction_timeout_ms == 0)
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "database.statement_timeout_ms".to_string(),
+                code: "CFG_DB_STATEMENT_TIMEOUT_REQUIRED".to_string(),
+                message: "statement_timeout_ms and idle_in_transaction_timeout_ms must be non-zero in staging and production".to_string(),
+                env_var_hint: "OMNI__DATABASE__STATEMENT_TIMEOUT_MS".to_string(),
+            });
+        }
+    }
+
+    fn validate_database_application_name(&self, issues: &mut Vec<ConfigValidationIssue>) {
+        if let Some(app_name) = &self.database.application_name
+            && (app_name.trim().is_empty()
+                || app_name.len() > 30
+                || !app_name
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'))
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "database.application_name".to_string(),
+                code: "CFG_DB_APPLICATION_NAME".to_string(),
+                message: "database.application_name must be non-empty, max 30 characters and contain only lowercase alphanumeric characters and hyphens".to_string(),
+                env_var_hint: "OMNI__DATABASE__APPLICATION_NAME".to_string(),
+            });
+        }
+    }
+
+    fn validate_database_security(&self, issues: &mut Vec<ConfigValidationIssue>) {
         if self.database.password.expose_secret().trim().is_empty() {
             issues.push(ConfigValidationIssue {
                 field_path: "database.password".to_string(),
@@ -273,6 +342,27 @@ where
                     code: "CFG_PROD_SECRET_REQUIRED".to_string(),
                     message: "database.password must not use insecure default password in production environment".to_string(),
                     env_var_hint: "OMNI__DATABASE__PASSWORD".to_string(),
+                });
+            }
+
+            if !matches!(
+                self.database.ssl_mode,
+                DbSslMode::Require | DbSslMode::VerifyCa | DbSslMode::VerifyFull
+            ) {
+                issues.push(ConfigValidationIssue {
+                    field_path: "database.ssl_mode".to_string(),
+                    code: "CFG_PROD_DB_TLS_REQUIRED".to_string(),
+                    message: "database.ssl_mode must be 'require', 'verify-ca', or 'verify-full' in production".to_string(),
+                    env_var_hint: "OMNI__DATABASE__SSL_MODE".to_string(),
+                });
+            }
+
+            if self.database.effective_migration_mode() == MigrationMode::Apply {
+                issues.push(ConfigValidationIssue {
+                    field_path: "database.migration.mode".to_string(),
+                    code: "CFG_PROD_DB_MIGRATION_MODE".to_string(),
+                    message: "database.migration.mode should be 'verify' in production pods; execute migrations via Kubernetes PreSync Job".to_string(),
+                    env_var_hint: "OMNI__DATABASE__MIGRATION__MODE".to_string(),
                 });
             }
         }

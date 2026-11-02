@@ -5,7 +5,7 @@ members = ["libs/*", "services/*", "workspace-hack"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
 authors = ["NQHxZeion"]
 license = "MIT"
 readme = "README.md"
@@ -86,6 +86,7 @@ sqlx = { version = "0.9", default-features = false, features = [
     "postgres",
     "chrono",
     "uuid",
+    "json",
     "macros",
     "migrate",
 ] }
@@ -103,7 +104,7 @@ anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde", "clock"] }
 
 # Identity & Security
-uuid = { version = "1.13", features = ["v4", "v7", "serde"] }
+uuid = { version = "1.13", features = ["v4", "v7", "v5", "serde"] }
 jsonwebtoken = "11.1.0"
 argon2 = "0.6"
 
@@ -112,6 +113,9 @@ dotenvy = "0.15"
 config = "0.15"
 secrecy = { version = "0.10", features = ["serde"] }
 validator = { version = "0.20", features = ["derive"] }
+
+# Logging Abstraction
+log = "0.4"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

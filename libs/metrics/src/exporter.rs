@@ -50,6 +50,22 @@ pub const PROBE_DURATION_BUCKETS: [f64; 8] = [
     2.000, // 2.0s
 ];
 
+/// Dải bucket chuẩn (đơn vị: giây) cho độ trễ truy vấn và giao dịch cơ sở dữ liệu (từ 1ms đến 5s).
+pub const DB_DURATION_BUCKETS: [f64; 12] = [
+    0.001, // 1ms   - Cache / indexed lookup cực nhanh
+    0.002, // 2ms
+    0.005, // 5ms   - Simple PK query
+    0.010, // 10ms  - Complex single query
+    0.025, // 25ms  - Transaction with multiple statements
+    0.050, // 50ms  - Heavy joins / aggregation
+    0.100, // 100ms - p95 threshold for queries
+    0.250, // 250ms - Slow query alert threshold
+    0.500, // 500ms
+    1.000, // 1.0s
+    2.500, // 2.5s
+    5.000, // 5.0s  - Approaching acquire/statement timeout
+];
+
 static GLOBAL_PROMETHEUS_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
 
 /// Khởi tạo và cài đặt Global Prometheus Recorder theo mô hình Idempotent Singleton.
@@ -109,6 +125,11 @@ fn create_configured_builder(config: &MetricsConfig) -> Result<PrometheusBuilder
         .set_buckets_for_metric(
             Matcher::Full(METRIC_K8S_READINESS_CHECK_DURATION_SECONDS.to_string()),
             &PROBE_DURATION_BUCKETS,
+        )
+        .map_err(|e| MetricsError::RecorderInit(e.to_string()))?
+        .set_buckets_for_metric(
+            Matcher::Prefix("db_client_".to_string()),
+            &DB_DURATION_BUCKETS,
         )
         .map_err(|e| MetricsError::RecorderInit(e.to_string()))?;
 
