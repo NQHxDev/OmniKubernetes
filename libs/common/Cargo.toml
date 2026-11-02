@@ -36,7 +36,12 @@ tracing.workspace = true
 tracing-opentelemetry.workspace = true
 unic-langid.workspace = true
 utoipa.workspace = true
+utoipa-swagger-ui = { workspace = true, optional = true }
 uuid.workspace = true
 validator.workspace = true
+
+[features]
+default = []
+swagger-ui = ["dep:utoipa-swagger-ui"]
 
 [dev-dependencies]

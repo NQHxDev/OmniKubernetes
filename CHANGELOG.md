@@ -28,6 +28,24 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 
 ### Added
 
+- **Tự động hóa Tài liệu API tập trung (OpenAPI / Swagger Tooling - Bước 8):**
+  - Đặc tả kiến trúc hệ thống chuẩn doanh nghiệp: `docs/architecture/api-documentation-architecture.md` (Phiên bản `1.0.0`, mô hình Decentralized Definition + Centralized Aggregation).
+  - Triển khai toàn diện module `libs/common/src/openapi/` (`omni-common`) và tích hợp trong `omni-errors`:
+    - **Enterprise Security Scheme Standard (`security.rs`):** Định nghĩa canonical security scheme `BEARER_AUTH_SECURITY_SCHEME = "BearerAuth"` và modifier `SecurityAddon` (HTTP Bearer JWT format), chuẩn hóa xác thực trên toàn bộ các service và duy trì token trong Swagger UI (Bẫy 3).
+    - **Shared Common Schemas Registration (`schemas.rs`):** Cung cấp `CommonSchemaAddon` và `register_common_schemas` tự động đăng ký các envelope và pagination schemas dùng chung (`ResponseMeta`, `OffsetPaginationMeta`, `CursorPaginationMeta`, `PaginationMeta`, `PaginatedResponseMeta`, `ReloadLocalesResult`) vào OpenAPI components.
+    - **Automated Docs Routers & Forwarded-Prefix Awareness (`router.rs`):** Cung cấp `create_docs_router` và `create_docs_router_with_config` mount các endpoint `/v3/api-docs` và `/v3/api-docs/openapi.json`. Triển khai tính năng Strict Forwarded-Prefix Awareness đọc header `X-Forwarded-Prefix` (và fallback `service_prefix`) tự động cập nhật Server Base URL của OpenAPI spec, khắc phục triệt để lỗi 404 khi "Try It Out" qua Ingress Gateway (Bẫy 1). Áp dụng chính sách Zero-HTML backend tiết kiệm 20-50MB RAM mỗi pod, kèm tùy chọn nhúng `swagger-ui` khi cần debug local.
+    - **Centralized Gateway Swagger UI Catalog (`catalog.rs`):** Cung cấp `SwaggerConfig`, `SwaggerConfigBuilder`, `SwaggerServiceUrl`, và router `create_swagger_config_router` phục vụ endpoint `/swagger-config.json` và `/swagger-ui/config/swagger-config.json` với đầy đủ tham số tối ưu UX (`persistAuthorization: true`, `filter: true`, `deepLinking: true`, `displayRequestDuration: true`).
+    - **RFC 9457 Problem Details Schema Registration (`omni-errors::openapi`):** Cung cấp `ErrorSchemaAddon` và `register_error_schemas` tự động đăng ký các schemas `ApiErrorResponse` và `InvalidParamError`.
+  - **Trọn bộ Kubernetes Ingress & Deployment Manifests (`infra/kubernetes/`):**
+    - `deployments/swagger-ui.yaml`: ConfigMap `swagger-ui-config`, Deployment `swagger-ui-aggregator` (image `swaggerapi/swagger-ui:v5.17.14`), Service `swagger-ui-service:8080`.
+    - `configmaps/swagger-config.json`: File cấu hình danh mục 6 service chuẩn của nền tảng OmniKubernetes.
+    - `ingress/swagger-ui-ingress.yaml`: Ingress cho Swagger UI Aggregator trên host `api.omnikubernetes.com`.
+    - `ingress/auth-ingress.yaml`, `order-ingress.yaml`, `payment-ingress.yaml`, `product-ingress.yaml`, `user-ingress.yaml`, `notification-ingress.yaml`: Kiến trúc Decoupled Ingress per Microservice chuẩn Chiến lược A (Strip Prefix với `rewrite-target: /$2` và `x-forwarded-prefix`).
+    - `ingress/single-ingress-preserve-prefix.yaml`: Cấu hình mẫu theo Chiến lược B (Preserve Prefix).
+  - **Bộ kiểm thử tự động toàn diện:**
+    - `libs/common/tests/openapi_tests.rs`: 9 test cases bao phủ spec endpoints, forward prefix injection, security scheme, common schemas, swagger config catalog router & builder.
+    - `libs/errors/tests/openapi_error_schema_tests.rs`: 3 test cases bao phủ đăng ký schema lỗi và cấu trúc thuộc tính RFC 9457.
+
 - **Khả năng Phục hồi mạng & Kiểm soát luồng (`omni-common` Resilience & `omni-cache` Limiter):**
   - Đặc tả kiến trúc hệ thống chuẩn doanh nghiệp: `docs/architecture/resilience-traffic-control-architecture.md` (Phiên bản `1.0.0`, 10 nguyên lý cốt lõi).
   - Triển khai toàn diện module `libs/common/src/resilience/` (`omni-common`) và tích hợp phân tán trong `omni-cache`:

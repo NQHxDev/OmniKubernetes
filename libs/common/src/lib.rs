@@ -14,6 +14,7 @@
 pub mod config;
 pub mod i18n;
 pub mod middleware;
+pub mod openapi;
 pub mod resilience;
 pub mod response;
 
@@ -38,6 +39,12 @@ pub use i18n::{
 pub use middleware::{
     RequestContext, TraceContext, inject_egress_headers, observability_middleware,
     parse_traceparent, request_context_middleware, timing_middleware,
+};
+pub use openapi::{
+    BEARER_AUTH_SECURITY_SCHEME, CommonSchemaAddon, DocsConfig, DocsConfigBuilder, SecurityAddon,
+    SwaggerConfig, SwaggerConfigBuilder, SwaggerServiceUrl, create_docs_router,
+    create_docs_router_with_config, create_swagger_config_router, register_common_schemas,
+    resolve_openapi_servers,
 };
 pub use response::{
     ApiResponse, ApiResponseBuilder, CursorPaginationMeta, OffsetPaginationMeta,
