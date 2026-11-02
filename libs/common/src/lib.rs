@@ -14,11 +14,20 @@
 pub mod config;
 pub mod i18n;
 pub mod middleware;
+pub mod resilience;
 pub mod response;
 
 pub use config::{
     AppConfig, AppEnvironment, ConfigError, ConfigLoader, ConfigValidationIssue, EmptyCustomConfig,
     ExposeSecret, SecretString,
+};
+
+pub use resilience::{
+    CircuitBreaker, CircuitBreakerLayer, GracefulShutdownCoordinator, InMemoryGcraLimiter,
+    LoadShedController, LoadShedLayer, RateLimitDecision, RateLimitKey, RateLimitLayer,
+    RateLimiter, ResilienceError, RetryBudget, RetryPolicy, RouteTier, ShutdownDrainGate,
+    TimeoutLayer, circuit_breaker_layer, execute_with_retry, load_shed_layer, rate_limit_layer,
+    timeout_layer, with_cancellation_token,
 };
 
 pub use i18n::{

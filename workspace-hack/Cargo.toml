@@ -22,7 +22,7 @@ form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
-futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hashbrown = { version = "0.16" }
 hyper = { version = "1", features = ["client", "http1", "http2", "server"] }
@@ -56,6 +56,7 @@ time = { version = "0.3", features = ["formatting", "macros", "parsing"] }
 tinystr = { version = "0.8", features = ["zerovec"] }
 tokio = { version = "1", features = ["full", "test-util"] }
 tokio-stream = { version = "0.1", features = ["fs", "net"] }
+tokio-util = { version = "0.7", features = ["codec", "io", "rt"] }
 tonic = { version = "0.14" }
 tower = { version = "0.5", default-features = false, features = ["balance", "buffer", "limit", "load-shed", "log", "timeout"] }
 tracing = { version = "0.1", features = ["log"] }
@@ -80,7 +81,7 @@ form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
-futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hashbrown = { version = "0.16" }
 idna = { version = "1" }

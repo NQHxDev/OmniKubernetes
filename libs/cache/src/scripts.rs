@@ -67,6 +67,10 @@ else
 end
 ";
 
+/// Script giới hạn tần suất phân tán trượt thời gian (Sliding Window Counter).
+pub const SCRIPT_SLIDING_WINDOW_RATE_LIMIT: &str =
+    omni_common::resilience::REDIS_SLIDING_WINDOW_LUA;
+
 /// Bộ khởi tạo các [`Script`] sẵn sàng thực thi.
 #[derive(Debug, Clone)]
 pub struct LuaScripts {

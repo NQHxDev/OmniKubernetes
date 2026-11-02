@@ -49,7 +49,7 @@ unic-langid = "0.9"
 
 # Asynchronous Runtime
 tokio = { version = "1.43", features = ["full"] }
-tokio-util = { version = "0.7", features = ["codec"] }
+tokio-util = { version = "0.7", features = ["codec", "rt"] }
 async-trait = "0.1"
 futures = "0.3"
 

@@ -28,6 +28,43 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 
 ### Added
 
+- **Khả năng Phục hồi mạng & Kiểm soát luồng (`omni-common` Resilience & `omni-cache` Limiter):**
+  - Đặc tả kiến trúc hệ thống chuẩn doanh nghiệp: `docs/architecture/resilience-traffic-control-architecture.md` (Phiên bản `1.0.0`, 10 nguyên lý cốt lõi).
+  - Triển khai toàn diện module `libs/common/src/resilience/` (`omni-common`) và tích hợp phân tán trong `omni-cache`:
+    - **Adaptive Rate Limiting 2 tầng (`rate_limit.rs` & `omni_cache::limiter`):**
+      - Tầng 1 (In-Memory Fast-Path): Thuật toán GCRA (Generic Cell Rate Algorithm) lock-free sử dụng `AtomicU64` tính toán Theoretical Arrival Time (TAT) và CAS loop, đạt độ trễ kiểm tra nanosecond (< 50ns) không phát sinh network call hay cấp phát heap.
+      - Tầng 2 (Distributed Sliding Window): Trait `DistributedRateLimiter` và hiện thực hóa `RedisRateLimiter` trong `omni-cache` (`limiter.rs`) sử dụng Redis Lua script trượt thời gian nguyên tử (`EVALSHA`), bảo đảm hạn ngạch toàn cụm Pod replica.
+      - Phân cấp định danh đa chiều (`RateLimitKey`: `usr:`, `tnt:`, `key:`, `ip:`) với tính năng chống giả mạo IP qua danh sách `trusted_proxies`.
+      - Phân tầng Route (`RouteTier`: `Sensitive`, `Heavy`, `Standard`, `ReadOnly`) với hệ số điều chỉnh hạn ngạch.
+      - Tower Layer & Service (`RateLimitLayer`, `RateLimitService`) tự động tiêm headers IETF: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, `Retry-After`.
+    - **Adaptive Load Shedding & Concurrency Limiting (`load_shed.rs`):**
+      - Áp dụng định luật Little $L = \lambda \cdot W$ qua Tokio `Semaphore` giới hạn số lượng request đồng thời trần (`max_concurrent_requests`).
+      - Chủ động từ chối request bằng mã lỗi HTTP `503 Service Unavailable` tức thì trong < 10 micro-giây khi hệ thống bão hòa, loại bỏ nguy cơ phình hàng đợi vô hạn (Unbounded Queueing) và ngăn ngừa Pod bị Linux `OOMKilled` (Exit Code 137).
+      - RAII Guard `ConcurrencyPermit` tự động cập nhật số lượng request in-flight.
+    - **Multi-Tier Request Timeout & Cancellation Propagation (`timeout.rs`):**
+      - Áp đặt thời hạn xử lý tối đa qua Tower Layer `TimeoutLayer`, trả về lỗi HTTP 504 / 408 Problem Details khi hết hạn.
+      - Tích hợp `with_cancellation_token` liên kết `tokio_util::sync::CancellationToken` để dừng ngay các tác vụ SQL/DB nền khi Client ngắt kết nối hoặc timeout, chống lãng phí CPU/DB (Wasted Work).
+      - Tiêm header `Request-Timeout` khi gọi downstream để lan truyền deadline.
+    - **Enterprise 3-State Circuit Breaker (`circuit_breaker.rs`):**
+      - Máy trạng thái hữu hạn FSM 3 pha: `Closed` $\leftrightarrow$ `Open` $\leftrightarrow$ `HalfOpen` với cửa sổ trượt (Sliding Window) thống kê kết quả cuộc gọi.
+      - Tự động ngắt mạch sang `Open` khi tỷ lệ lỗi vượt `circuit_breaker_error_threshold_pct` hoặc tỷ lệ cuộc gọi chậm vượt ngưỡng sau `min_requests`.
+      - Cơ chế thăm dò tự phục hồi thận trọng trong `HalfOpen` với hạn ngạch thử nghiệm probe requests.
+      - Ma trận phân định lỗi nghiêm ngặt: Lỗi hạ tầng (500, 502, 503, 504, Connection Refused, Timeout) được tính vào Circuit Breaker; lỗi nghiệp vụ Client (400, 401, 403, 404, 409, 422) hoàn toàn bị loại trừ.
+    - **Chống Bão Thử lại & Exponential Backoff with Jitter (`retry.rs`):**
+      - Triển khai thuật toán **AWS Full Jitter Exponential Backoff**: $T_{\text{sleep}} = \text{random}(0, \min(T_{\text{max}}, T_{\text{base}} \times 2^{\text{attempt}}))$.
+      - Chốt chặn an toàn lũy thừa `is_idempotent_request`: Cấm tuyệt đối thử lại request `POST`/`PATCH` trừ khi có header `Idempotency-Key` hoặc `X-Idempotency-Key`.
+      - Hạn ngạch thử lại Token Bucket (`RetryBudget`): Giới hạn tổng số request thử lại không vượt quá 20% tổng lưu lượng hệ thống.
+    - **7-Stage Zero-Downtime Kubernetes Graceful Shutdown Coordinator (`shutdown.rs`):**
+      - Hóa giải race condition giữa tín hiệu `SIGTERM` của Kubelet và việc cập nhật bảng định tuyến mạng của Ingress/EndpointSlice.
+      - Phối hợp tuần tự 7 giai đoạn: Bắt tín hiệu OS -> Kích hoạt Drain Gate `/readyz` 503 qua `ShutdownDrainGate` -> Ngủ chờ Quiescence -> Drain In-flight HTTP requests -> Dừng Background Workers qua `CancellationToken` -> Xả PgPool, Redis và Log Buffers -> Thoát an toàn mã 0.
+      - `ProbeState` trong `omni-metrics` (`libs/metrics/src/probes.rs`) thực thi trait `ShutdownDrainGate`.
+    - **Hợp đồng Lỗi RFC 9457 & Deep Observability (`error.rs`, `metrics.rs`):**
+      - Chuẩn hóa các lỗi `RateLimited`, `LoadShedRejected`, `CircuitBreakerOpen`, `RequestTimeout` thành RFC 9457 Problem Details (`application/problem+json`).
+      - Bộ chỉ số Prometheus: `http_requests_rate_limited_total`, `resilience_circuit_breaker_state`, `resilience_circuit_breaker_transitions_total`, `resilience_circuit_breaker_rejected_total`, `resilience_load_shed_rejected_total`, `resilience_concurrency_in_flight`, `resilience_retry_attempts_total`, `resilience_retry_exhausted_total`, `resilience_shutdown_stage_duration_seconds`.
+    - **Mô hình Cấu hình Phân tầng (`config/resilience.rs`):**
+      - Mở rộng `ResilienceConfig` với 5 nhóm tham số kiểm soát luồng và khả năng chịu lỗi, không dùng comment banner kiểu `// ====`.
+    - **Bộ kiểm thử toàn diện:**
+      - Bộ test tích hợp `libs/common/tests/resilience_tests.rs` bao phủ 12/12 test cases cho toàn bộ các thuật toán và middleware.
 - **Kiến trúc Giao tiếp Hướng sự kiện & Khung gửi tin cậy (`omni-messaging`):**
   - Đặc tả kiến trúc hệ thống chuẩn doanh nghiệp: `docs/architecture/event-driven-messaging-outbox-architecture.md`.
   - Triển khai toàn diện crate `libs/messaging` (`omni-messaging`) bám sát 9 nguyên lý kiến trúc cốt lõi:
