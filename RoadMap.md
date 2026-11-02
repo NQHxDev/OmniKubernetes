@@ -47,7 +47,7 @@ flowchart TD
         M04["4. Metrics Telemetry & Kubernetes Probes<br/>(omni-metrics, Prometheus RED, Healthz/Readyz)"]
         M05["5. Relational Persistence Foundation<br/>(omni-database, SQLx PgPool, Migrations, Auditing)"]
         M06["6. Distributed Caching & Concurrency Control<br/>(omni-cache, 6-Layer Stampede, Redlock, PII Masking)"]
-    
+    end
 
     subgraph Phase3["GIAI ĐOẠN 3: BẢO MẬT & TRUYỀN THÔNG BẤT ĐỒNG BỘ"]
         P5["Bước 5: Identity & Security Context<br/>(omni-auth, JWT Claims, Argon2, RBAC Extractors)"]
@@ -133,7 +133,7 @@ flowchart TD
 
 ### Bước 4: Bộ nhớ đệm phân tán & Kiểm soát đồng thời (`omni-cache`) - [ĐÃ HOÀN THÀNH]
 
-- **Crate thực hiện:** `libs/cache` (`omni-cache`).
+- **Crate thực hiện:** `libs/cache` (`omni-cache`) kết hợp đặc tả [`distributed-caching-concurrency-architecture.md`](./docs/architecture/distributed-caching-concurrency-architecture.md).
 - **Vấn đề giải quyết:** Tối ưu hóa độ trễ đọc, giảm tải cho PostgreSQL, và giải quyết triệt để tranh chấp dữ liệu (Race Condition) trong môi trường phân tán nhiều Pod replica.
 - **Các nhiệm vụ kỹ thuật cụ thể:**
   1. **Redis Async Multiplexed Manager:**
@@ -152,7 +152,7 @@ flowchart TD
 
 ### Bước 5: Nền tảng Nhận dạng & Bảo mật truy cập (`omni-auth`)
 
-- **Crate thực hiện:** `libs/auth` (`omni-auth`).
+- **Crate thực hiện:** `libs/auth` (`omni-auth`) kết hợp đặc tả [`identity-security-context-architecture.md`](./docs/architecture/identity-security-context-architecture.md).
 - **Vấn đề giải quyết:** Định danh người dùng, kiểm soát phân quyền (RBAC/ABAC) và truyền dẫn ngữ cảnh định danh xuyên suốt hệ thống microservices.
 - **Các nhiệm vụ kỹ thuật cụ thể:**
   1. **JWT Engine & Claims Specification:**

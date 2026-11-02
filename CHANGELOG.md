@@ -34,6 +34,38 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
   - Chuẩn quản lý cấu hình phân cấp kiểu tĩnh an toàn (`configuration-management-architecture.md`).
   - Chuẩn Metrics Telemetry, RED Middleware & Kubernetes Probes (`metrics-probes-telemetry-architecture.md`).
   - Chuẩn kiến trúc lưu trữ quan hệ, Transaction & Resilience cho PostgreSQL (`relational-persistence-architecture.md`).
+  - Chuẩn Bộ nhớ đệm phân tán, Chống Stampede & Khóa phân tán với Fencing Token (`distributed-caching-concurrency-architecture.md`).
+  - Chuẩn Nền tảng Nhận dạng, Quản lý Phiên & Bảo mật Truy cập Zero-Trust (`identity-security-context-architecture.md`).
+- Triển khai toàn diện Nền tảng Nhận dạng & Bảo mật Truy cập `omni-auth` (`libs/auth`):
+  - **Mô hình Cấu hình Mở rộng & Startup Guardrails (`omni-common::config::auth`):**
+    - Mở rộng `AuthConfig` hỗ trợ đa chế độ: `Symmetric`, `AsymmetricPem`, `JwksRemote`.
+    - Hỗ trợ đa thuật toán ký số: `HS256`, `HS384`, `HS512`, `RS256`, `EdDSA`, `ES256`, `ES384`, `ES512`.
+    - Bổ sung các cấu hình `AsymmetricConfig` (`private_key_pem`, `public_key_pem`), `JwksConfig` (`url`, `refresh_interval_secs`, `cache_ttl_secs`), `Argon2Config` (`memory_kib`, `iterations`, `parallelism`, `salt_length_bytes`).
+    - Các chốt chặn an toàn khởi động (Fail-Fast Guardrails): `CFG_PROD_JWT_ENTROPY`, `CFG_AUTH_DEV_SECRET_IN_PROD`, `CFG_AUTH_MISSING_ASYMMETRIC_KEYS`, `CFG_AUTH_INVALID_TTL_RATIO`, `CFG_AUTH_ARGON2_TOO_WEAK`.
+  - **Cơ chế Băm & Xác thực Mật khẩu Argon2id (`crypto::password`):**
+    - Triển khai `PasswordSecurity` tuân thủ khuyến nghị OWASP Password Storage và RFC 9106.
+    - Chạy non-blocking trên Tokio blocking thread pool thông qua `tokio::task::spawn_blocking` để triệt tiêu nguy cơ nghẽn Event Loop (Worker Thread Starvation).
+    - So khớp mật khẩu đẳng thời (Constant-Time Verification) chống Timing Side-Channel Attacks.
+  - **Động cơ JWT & Đặc tả Claims Chặt chẽ (`token`):**
+    - Cấu trúc `AuthUserClaims` tuân thủ RFC 7519 & RFC 9562 với các định danh UUIDv7 (`sub`, `session_id`, `tenant_id`, `jti`).
+    - Hỗ trợ mô hình phân quyền RBAC (`Role::SuperAdmin`, `Admin`, `Operator`, `User`, `ServiceAccount`, `Custom`) kết hợp Fine-Grained Permissions dạng `domain:action` và wildcard matching (`orders:*`, `*`).
+    - `TokenEngine` quản lý luân chuyển khóa qua `kid`, ký và thẩm định đa thuật toán với `jsonwebtoken 11.1.0`.
+    - Tạo cặp `TokenPair` chuẩn OAuth2 Bearer (`access_token`, `refresh_token`).
+  - **Giao thức Gateway Signed Context (`middleware::signed_context`):**
+    - Giao thức chữ ký số HMAC-SHA256 bảo vệ mạng nội bộ pod-to-pod trong Kubernetes chống giả mạo Header (`X-User-Id`, `X-Tenant-Id`).
+    - Freshness Check chống Replay Attack dựa trên `X-Omni-Timestamp` và `signature_max_age_secs`.
+  - **Kiến trúc Phân tầng Thu hồi Token (Tiered Revocation) & RTR (`revocation`):**
+    - JTI Blacklist trên `omni-cache` (Redis) với TTL chính xác bằng thời gian sống còn lại của Access Token.
+    - Refresh Token Rotation (RTR) với cơ chế phát hiện tái sử dụng trái phép (Token Theft Detection) và vô hiệu hóa tức thời toàn bộ Token Family.
+  - **Axum 0.8 Extractors & Declarative Guards (`extractor`, `guard`):**
+    - Extractors kiểu tĩnh: `AuthenticatedUser` (bắt buộc), `OptionalUser` (tùy chọn), `CurrentTenant` (cô lập đa tenant), `BearerToken`.
+    - Route Layers khai báo: `require_role`, `require_any_role`, `require_permission`, `require_all_permissions`.
+  - **Tích hợp RFC 9457 & Đa ngôn ngữ i18n (`error`):**
+    - Bảng phân loại `AuthError` chuẩn hóa (`ERR_AUTH_*`) và tự động chuyển đổi sang `omni_errors::AppError` (`401 Unauthorized`, `403 Forbidden`).
+    - Bổ sung 100% bản dịch chuỗi lỗi `ERR_AUTH_*` cho cả 3 ngôn ngữ `vi-VN`, `en-US`, `ja-JP`.
+  - **Context Bridging & Observability (`bridge`, `instrument`):**
+    - Đồng bộ tự động danh tính sang `RequestContext`, OpenTelemetry Span attributes, và PostgreSQL `SessionContext` (`omni.actor_id`, `omni.tenant_id`).
+    - Bộ chỉ số Prometheus: `auth_tokens_validated_total`, `auth_failures_total`, `auth_crypto_duration_seconds`.
 - Triển khai thư viện lõi `omni-common` (`libs/common`):
   - **Type-Safe Configuration & Environment Binding (`config`):**
     - Bộ nạp cấu hình phân cấp 5 tầng `ConfigLoader` (`loader.rs`): Nạp và hợp nhất sâu theo thứ tự ưu tiên tăng dần: Safe Defaults -> `config/base.yaml` -> `config/{env}/default.yaml` -> System Environment `OMNI__*` (kèm hỗ trợ `.env` cục bộ cho môi trường Dev) -> Programmatic Overrides (`with_override`, `with_env_vars`).
