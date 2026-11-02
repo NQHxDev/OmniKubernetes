@@ -170,6 +170,11 @@ jobs:
       - name: Setup Kind cluster
         uses: helm/kind-action@v1
 
+      - name: Wait for cluster to be ready
+        run: |
+          kubectl wait --namespace kube-system --for=condition=Ready pods --all --timeout=120s
+          kubectl get pods -A
+
       - name: Run integration tests
         run: cargo test --test integration_k8s -- --include-ignored
 
