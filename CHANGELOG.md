@@ -28,6 +28,20 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 
 ### Added
 
+- **Kiến trúc Giao tiếp Hướng sự kiện & Khung gửi tin cậy (`omni-messaging`):**
+  - Đặc tả kiến trúc hệ thống chuẩn doanh nghiệp: `docs/architecture/event-driven-messaging-outbox-architecture.md`.
+  - Triển khai toàn diện crate `libs/messaging` (`omni-messaging`) bám sát 9 nguyên lý kiến trúc cốt lõi:
+    - **CloudEvents Engine (`cloudevent::*`):** Tuân thủ 100% đặc tả CNCF CloudEvents v1.0.2 (`CloudEvent<T>`, `CloudEventBuilder`, `CloudEventExtensions`), hỗ trợ chuyển đổi linh hoạt giữa Structured Content Mode và Binary Content Mode, time-ordered UUIDv7 event identifiers, UTC RFC 3339 timestamps.
+    - **Transactional Outbox Engine (`outbox::*`):** Triển khai `OutboxRepository` liên kết trực tiếp với `omni_database::UnitOfWork` để loại bỏ hoàn toàn Dual-Write Dilemma bằng ACID Local Transaction; tối ưu chỉ mục partial B-Tree phục vụ Polling.
+    - **Hybrid Outbox Relay Worker (`outbox::relay`):** Kết hợp PostgreSQL `LISTEN/NOTIFY` (`omni_outbox_tick`) để thức tỉnh tức thì không độ trễ và `SELECT ... FOR UPDATE SKIP LOCKED` để kéo dữ liệu theo lô an toàn giữa nhiều instance pod song song.
+    - **Broker Transport Abstraction & Pluggable Drivers (`broker::*`):** Các trait cốt lõi `MessagePublisher`, `MessageConsumer`, `RawBrokerMessage`. Triển khai driver `InMemoryBroker` phục vụ kiểm thử độc lập, `RabbitMqBroker` (AMQP 0-9-1 với `lapin`), adapter stubs cho Apache Kafka và NATS JetStream.
+    - **Dual-Layer Idempotent Inbox Engine (`inbox::*`):** Cơ chế bảo vệ lũy thừa 2 tầng chống xử lý trùng lặp: Fast-path trên Redis (`omni-cache` / `SET NX EX`) và Strong-consistency trên PostgreSQL (`inbox_events` với `ON CONFLICT DO NOTHING`).
+    - **Resilient Consumer Pipeline (`consumer::*`):** Bộ điều phối worker pool chịu lỗi với concurrency control, Exponential Backoff kèm Full Jitter, Poison Pill detection và tự động định tuyến Dead Letter Queue (DLQ) kèm chẩn đoán lỗi (`DeadLetterHeaders`).
+    - **Declarative Message Handlers (`consumer::handler`):** Trait `MessageHandler<T>` tự động deserialize payload CloudEvent, bọc ngữ cảnh `MessageContext` và tự động xử lý Ack/Nack/Retry/DLQ.
+    - **Housekeeping & Retention Engine (`outbox::cleanup`):** `OutboxRetentionWorker` dọn dẹp định kỳ các bản ghi Outbox và Inbox đã hoàn tất vượt ngưỡng retention_hours để chống phình to bảng (Table Bloat).
+    - **Distributed Tracing & Telemetry (`tracing::*`, `instrument::*`):** W3C Carrier Injection & Extraction (`traceparent`, `tracestate`) tích hợp OpenTelemetry Semantic Conventions v1.27+, bộ chỉ số Prometheus chuẩn hóa (`messaging_outbox_*`, `messaging_consumer_*`, `messaging_dlq_*`) và bộ lọc PII sanitization cho payload event.
+    - **Bảng phân loại lỗi & RFC 9457 Adapter (`error::*`):** Phân định `MessagingError`, `MessageProcessingError` (Transient vs Terminal) và ánh xạ sang `omni_errors::AppError`.
+    - **Bộ kiểm thử tự động toàn diện:** Bao phủ 23 bài test đơn vị và tích hợp trong `tests/` (`cloudevent_tests.rs`, `retry_backoff_tests.rs`, `w3c_propagation_tests.rs`, `memory_broker_tests.rs`, `idempotent_consumer_tests.rs`, `outbox_model_and_config_tests.rs`).
 - Đặc tả kiến trúc hệ thống trong `docs/architecture/`:
   - Chuẩn giao thức phản hồi và đa ngôn ngữ cấp doanh nghiệp (`base-response-architecture.md`).
   - Chuẩn tài liệu hóa API và tổng hợp OpenAPI tập trung tại Gateway (`api-documentation-architecture.md`).

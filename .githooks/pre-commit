@@ -8,6 +8,17 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# 0. Prevent direct commits on protected branches
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+case "$CURRENT_BRANCH" in
+    main|staging|master)
+        printf "%b\n" "\n${RED}${BOLD}✖ [BLOCKED]${NC} Direct commit on protected branch '${YELLOW}${CURRENT_BRANCH}${NC}' is not allowed!"
+        printf "%b\n" "  Please switch to a feature branch and open a Pull Request."
+        printf "%b\n" "  Bypass with '--no-verify' only for emergencies.\n"
+        exit 1
+        ;;
+esac
+
 # Check if any Rust-related files are staged
 STAGED_RUST_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs)$|Cargo\.(toml|lock)$|rustfmt\.toml$')
 
