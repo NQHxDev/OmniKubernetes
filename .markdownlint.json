@@ -1,11 +1,14 @@
 {
     "default": true,
+    "MD007": {
+        "indent": 2
+    },
     "MD013": false,
     "MD024": {
         "siblings_only": true
     },
     "MD026": {
-        "punctuation": ".,;!?。，；！？"
+        "punctuation": ".,;?。，；！？"
     },
     "MD029": {
         "style": "one_or_ordered"

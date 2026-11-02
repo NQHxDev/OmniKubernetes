@@ -7,6 +7,8 @@
 use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 /// Helper to execute `kubectl` with the given arguments and assert success.
 fn run_kubectl(args: &[&str]) -> String {
@@ -71,43 +73,65 @@ fn test_k8s_cluster_connectivity() {
 #[test]
 #[ignore = "Requires a running Kubernetes cluster (executed in CI with KIND)"]
 fn test_k8s_nodes_ready() {
-    let status = run_kubectl(&[
+    let start = Instant::now();
+    let timeout = Duration::from_secs(60);
+
+    while start.elapsed() < timeout {
+        let status = run_kubectl(&[
+            "get",
+            "nodes",
+            "-o",
+            "jsonpath={.items[*].status.conditions[?(@.type=='Ready')].status}",
+        ]);
+
+        if status.split_whitespace().any(|s| s == "True") {
+            return;
+        }
+
+        sleep(Duration::from_secs(2));
+    }
+
+    let final_status = run_kubectl(&[
         "get",
         "nodes",
         "-o",
         "jsonpath={.items[*].status.conditions[?(@.type=='Ready')].status}",
     ]);
-
-    assert!(
-        status.split_whitespace().any(|s| s == "True"),
-        "No nodes are in Ready state (got: {status:?})"
-    );
+    panic!("No nodes are in Ready state within timeout (got: {final_status:?})");
 }
 
 /// Test that core system pods in `kube-system` are running.
 #[test]
 #[ignore = "Requires a running Kubernetes cluster (executed in CI with KIND)"]
 fn test_k8s_system_pods_healthy() {
-    let phases = run_kubectl(&[
-        "get",
-        "pods",
-        "-n",
-        "kube-system",
-        "-o",
-        "jsonpath={.items[*].status.phase}",
-    ]);
+    let start = Instant::now();
+    let timeout = Duration::from_secs(90);
 
-    assert!(
-        !phases.trim().is_empty(),
-        "No pods found in kube-system namespace"
-    );
+    while start.elapsed() < timeout {
+        let phases = run_kubectl(&[
+            "get",
+            "pods",
+            "-n",
+            "kube-system",
+            "-o",
+            "jsonpath={.items[*].status.phase}",
+        ]);
 
-    for phase in phases.split_whitespace() {
-        assert!(
-            phase == "Running" || phase == "Succeeded",
-            "Unhealthy pod phase detected in kube-system: {phase} (all phases: {phases})"
-        );
+        if !phases.trim().is_empty() {
+            let all_healthy = phases
+                .split_whitespace()
+                .all(|phase| phase == "Running" || phase == "Succeeded");
+
+            if all_healthy {
+                return;
+            }
+        }
+
+        sleep(Duration::from_secs(2));
     }
+
+    let pods_detail = run_kubectl(&["get", "pods", "-n", "kube-system"]);
+    panic!("Timed out waiting for kube-system pods to become healthy:\n{pods_detail}");
 }
 
 /// Test service discovery mechanism in the default namespace.

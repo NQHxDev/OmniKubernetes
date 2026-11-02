@@ -5,7 +5,7 @@ members = ["libs/*", "services/*", "workspace-hack"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
 authors = ["NQHxZeion"]
 license = "MIT"
 readme = "README.md"
@@ -25,7 +25,7 @@ omni-metrics = { path = "libs/metrics" }
 # Web Framework & HTTP Networking
 axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.5", features = ["util", "timeout", "load-shed"] }
-tower-http = { version = "0.6", features = [
+tower-http = { version = "0.7.1", features = [
     "trace",
     "cors",
     "compression-full",
@@ -33,16 +33,17 @@ tower-http = { version = "0.6", features = [
     "util",
 ] }
 hyper = { version = "1.6", features = ["full"] }
-reqwest = { version = "0.12", default-features = false, features = [
+reqwest = { version = "0.13.5", default-features = false, features = [
     "json",
-    "rustls-tls",
+    "rustls",
 ] }
 
 # Concurrency & Synchronization
 arc-swap = "1.7"
+parking_lot = "0.12"
 
 # Internationalization & Localization (Mozilla Fluent & BCP 47)
-fluent-bundle = "0.15"
+fluent-bundle = "0.16"
 intl-memoizer = "0.5"
 unic-langid = "0.9"
 
@@ -56,6 +57,8 @@ futures = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_urlencoded = "0.7"
+lz4_flex = { version = "0.11", default-features = false, features = ["safe-encode", "safe-decode"] }
+zstd = { version = "0.13", default-features = false }
 
 # Observability, Tracing & Logging
 tracing = "0.1"
@@ -65,26 +68,32 @@ tracing-subscriber = { version = "0.3", features = [
     "fmt",
 ] }
 tracing-appender = "0.2"
+opentelemetry = "0.33.1"
+opentelemetry_sdk = { version = "0.33.1", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.33.1", features = ["grpc-tonic"] }
+tracing-opentelemetry = "0.34"
+tonic = "0.14.9"
 
 # Metrics & Monitoring
 metrics = "0.24"
-metrics-exporter-prometheus = "0.16"
+metrics-exporter-prometheus = "0.18.3"
 
 # OpenAPI & API Documentation
-utoipa = { version = "5.3", features = ["axum_extras", "chrono", "uuid"] }
-utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+utoipa = { version = "6.0", features = ["axum_extras", "chrono", "uuid"] }
+utoipa-swagger-ui = { version = "10.0.2", features = ["axum"] }
 
 # Database & Storage
-sqlx = { version = "0.8", default-features = false, features = [
+sqlx = { version = "0.9", default-features = false, features = [
     "runtime-tokio",
     "tls-rustls",
     "postgres",
     "chrono",
     "uuid",
+    "json",
     "macros",
     "migrate",
 ] }
-redis = { version = "0.28", features = [
+redis = { version = "1.8.1", features = [
     "tokio-comp",
     "connection-manager",
     "aio",
@@ -98,13 +107,22 @@ anyhow = "1.0"
 chrono = { version = "0.4", features = ["serde", "clock"] }
 
 # Identity & Security
-uuid = { version = "1.13", features = ["v4", "v7", "serde"] }
-jsonwebtoken = "9.3"
-argon2 = "0.5"
+uuid = { version = "1.13", features = ["v4", "v7", "v5", "serde"] }
+jsonwebtoken = "11.1.0"
+argon2 = "0.6"
+hmac = "0.13"
+sha2 = "0.11"
+hex = "0.4"
+rand = "0.9"
 
 # Environment & Configuration
 dotenvy = "0.15"
 config = "0.15"
+secrecy = { version = "0.10", features = ["serde"] }
+validator = { version = "0.20", features = ["derive"] }
+
+# Logging Abstraction
+log = "0.4"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

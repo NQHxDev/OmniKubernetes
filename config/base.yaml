@@ -1,0 +1,103 @@
+# OmniKubernetes Base Configuration
+
+service:
+  name: "omni-service"
+  version: "0.1.0"
+  environment: "dev"
+  region: "ap-southeast-1"
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  grpc_port: 50051
+  request_timeout_secs: 30
+  shutdown_timeout_secs: 15
+  max_body_size_bytes: 2097152 # 2 MiB
+  trusted_proxies:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+  cors:
+    allow_origins:
+      - "http://localhost:3000"
+    allow_credentials: true
+    max_age_secs: 3600
+
+logging:
+  log_level: "info"
+  log_format: "json"
+  buffered_lines_limit: 10000
+  lossy: true
+  otlp_endpoint: null
+
+observability:
+  metrics_enabled: true
+  metrics_path: "/metrics"
+  openapi_enabled: true
+  openapi_json_path: "/v3/api-docs/openapi.json"
+  swagger_ui_enabled: false
+  sampling_ratio: 1.0
+
+database:
+  enabled: false
+  host: "localhost"
+  port: 5432
+  username: "omni_user"
+  password: "dev_only_password_change_me"
+  database_name: "omni_db"
+  ssl_mode: "prefer"
+  max_connections: 20
+  min_connections: 2
+  acquire_timeout_secs: 5
+  idle_timeout_secs: 300
+  max_lifetime_secs: 1800
+  slow_query_threshold_ms: 200
+  auto_migrate: false
+
+redis:
+  enabled: false
+  host: "localhost"
+  port: 6379
+  password: null
+  database_index: 0
+  pool_size: 16
+  connection_timeout_ms: 2000
+  command_timeout_ms: 1000
+  key_prefix: "omni"
+  compression_threshold_bytes: 8192
+
+auth:
+  enabled: false
+  jwt_algorithm: "HS256"
+  jwt_secret: "dev_only_jwt_secret_key_must_be_at_least_32_bytes_long"
+  access_token_ttl_secs: 900
+  refresh_token_ttl_secs: 604800
+  issuer: "urn:omni:auth"
+  audience: "urn:omni:api"
+  argon2_memory_kib: 19456
+  argon2_iterations: 2
+  argon2_parallelism: 1
+
+messaging:
+  enabled: false
+  broker_url: "amqp://guest:guest@localhost:5672/%2f"
+  outbox_batch_size: 100
+  outbox_poll_interval_ms: 500
+  max_retries: 5
+  dlq_topic_suffix: ".dlq"
+
+resilience:
+  rate_limit_enabled: true
+  rate_limit_rps: 100
+  rate_limit_burst: 200
+  max_concurrent_requests: 1024
+  circuit_breaker_error_threshold_pct: 50
+  circuit_breaker_reset_timeout_secs: 30
+
+i18n:
+  locales_dir: "libs/common/locales"
+  default_locale: "vi-VN"
+  supported_locales:
+    - "vi-VN"
+    - "en-US"
+    - "ja-JP"

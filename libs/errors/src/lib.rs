@@ -14,6 +14,6 @@ pub use app_error::AppError;
 pub use codes::*;
 pub use omni_common::response;
 pub use problem::{
-    ApiErrorResponse, ApiErrorResponseBuilder, InvalidParamError, PROBLEM_JSON_MEDIA_TYPE,
-    dot_notation_to_json_pointer, json_pointer_to_dot_notation,
+    ApiErrorResponse, ApiErrorResponseBuilder, ErrorCodeExtension, InvalidParamError,
+    PROBLEM_JSON_MEDIA_TYPE, dot_notation_to_json_pointer, json_pointer_to_dot_notation,
 };

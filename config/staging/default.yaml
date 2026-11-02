@@ -1,0 +1,22 @@
+# OmniKubernetes Staging Profile Configuration (config/staging/default.yaml)
+# Pre-production and integration testing environment.
+
+service:
+  environment: "staging"
+
+logging:
+  log_level: "info"
+  log_format: "json"
+  buffered_lines_limit: 20000
+  lossy: true
+
+observability:
+  swagger_ui_enabled: true
+  sampling_ratio: 0.5
+
+database:
+  ssl_mode: "require"
+  max_connections: 30
+  min_connections: 5
+  acquire_timeout_secs: 5
+  auto_migrate: true

@@ -20,7 +20,8 @@
         {
             "files": "*.md",
             "options": {
-                "proseWrap": "preserve"
+                "proseWrap": "preserve",
+                "tabWidth": 2
             }
         }
     ]

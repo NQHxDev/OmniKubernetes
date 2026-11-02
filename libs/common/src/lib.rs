@@ -8,10 +8,18 @@
 //!   powered by `ArcSwap`.
 //! - **Observability & Timing Middleware (`middleware`):** W3C `traceparent` & `X-Request-Id` correlation
 //!   (`RequestContext`) and W3C `Server-Timing` / `X-Response-Time` latency headers.
+//! - **Configuration & Environment Binding (`config`):** Enterprise 5-layer hierarchical configuration,
+//!   fail-fast validation, zero-leak secret protection with memory zeroization, and Kubernetes Downward API.
 
+pub mod config;
 pub mod i18n;
 pub mod middleware;
 pub mod response;
+
+pub use config::{
+    AppConfig, AppEnvironment, ConfigError, ConfigLoader, ConfigValidationIssue, EmptyCustomConfig,
+    ExposeSecret, SecretString,
+};
 
 pub use i18n::{
     AuthUserClaims, DEFAULT_LOCALE, I18nError, I18nManager, LocaleBundles, ReloadLocalesResult,
@@ -19,7 +27,8 @@ pub use i18n::{
     match_canonical_locale, spawn_sighup_reload_listener,
 };
 pub use middleware::{
-    RequestContext, TraceContext, parse_traceparent, request_context_middleware, timing_middleware,
+    RequestContext, TraceContext, inject_egress_headers, observability_middleware,
+    parse_traceparent, request_context_middleware, timing_middleware,
 };
 pub use response::{
     ApiResponse, ApiResponseBuilder, CursorPaginationMeta, OffsetPaginationMeta,

@@ -1,12 +1,6 @@
 name: Rust CI
 
 on:
-  push:
-    branches: [main, staging]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - ".gitignore"
   pull_request:
     branches: [main, staging]
     paths-ignore:
@@ -16,7 +10,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -63,8 +57,8 @@ jobs:
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-  test:
-    name: Unit & Doc Tests
+  docs:
+    name: Documentation Check
     needs: fmt
     runs-on: ubuntu-latest
     steps:
@@ -76,10 +70,53 @@ jobs:
         with:
           cache: "true"
 
-      - name: Run unit and doc tests
-        run: |
-          cargo test --lib --bins --all-features
-          cargo test --doc --all-features
+      - name: Check documentation & intra-doc links
+        run: RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --all-features
+
+  test:
+    name: Workspace Tests
+    needs: fmt
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: omni_user
+          POSTGRES_PASSWORD: omni_password
+          POSTGRES_DB: omni_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      OMNI_TEST_DATABASE_URL: postgres://omni_user:omni_password@localhost:5432/omni_test
+      OMNI_TEST_REDIS_URL: redis://localhost:6379
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          cache: "true"
+
+      - name: Run workspace tests
+        run: cargo test --workspace --all-targets --all-features
+
+      - name: Run workspace doc tests
+        run: cargo test --workspace --doc --all-features
 
   audit:
     name: Security Audit
@@ -133,13 +170,18 @@ jobs:
       - name: Setup Kind cluster
         uses: helm/kind-action@v1
 
+      - name: Wait for cluster to be ready
+        run: |
+          kubectl wait --namespace kube-system --for=condition=Ready pods --all --timeout=120s
+          kubectl get pods -A
+
       - name: Run integration tests
         run: cargo test --test integration_k8s -- --include-ignored
 
   check-success:
     name: CI Success
     if: always()
-    needs: [fmt, clippy, test, audit, docker, integration]
+    needs: [fmt, clippy, docs, test, audit, docker, integration]
     runs-on: ubuntu-latest
     steps:
       - name: Verify all jobs succeeded

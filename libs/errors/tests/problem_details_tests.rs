@@ -12,8 +12,8 @@ use axum::{
 use chrono::TimeZone;
 use omni_common::{I18nManager, ResponseMeta, response::X_REQUEST_ID_HEADER};
 use omni_errors::{
-    ApiErrorResponse, AppError, ERR_INTERNAL_SERVER, ERR_VALIDATION_FAILED, InvalidParamError,
-    PROBLEM_JSON_MEDIA_TYPE, TYPE_INTERNAL_SERVER_ERROR, TYPE_VALIDATION_ERROR,
+    ApiErrorResponse, AppError, ERR_INTERNAL_SERVER, ERR_VALIDATION_FAILED, ErrorCodeExtension,
+    InvalidParamError, PROBLEM_JSON_MEDIA_TYPE, TYPE_INTERNAL_SERVER_ERROR, TYPE_VALIDATION_ERROR,
     VAL_INVALID_ENUM_VALUE, VAL_INVALID_POSTAL_CODE, VAL_NUMBER_MIN_VALUE,
     dot_notation_to_json_pointer, json_pointer_to_dot_notation,
 };
@@ -170,6 +170,12 @@ async fn test_rfc9457_into_response_headers_and_500_information_leakage_preventi
         resp.headers().get(X_REQUEST_ID_HEADER).unwrap(),
         "01a185e2-2fed-7781-8100-1b8e31a0eee5"
     );
+
+    let err_code_ext = resp
+        .extensions()
+        .get::<ErrorCodeExtension>()
+        .expect("ErrorCodeExtension must be attached");
+    assert_eq!(err_code_ext.0.as_ref(), ERR_INTERNAL_SERVER);
 
     let body_bytes = to_bytes(resp.into_body(), usize::MAX).await.unwrap();
     let json_body: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();

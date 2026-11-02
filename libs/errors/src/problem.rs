@@ -450,6 +450,10 @@ impl ApiErrorResponse {
     }
 }
 
+/// Extension attached to `http::Response::extensions()` carrying standardized business error code.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ErrorCodeExtension(pub Cow<'static, str>);
+
 impl IntoResponse for ApiErrorResponse {
     fn into_response(self) -> Response {
         let status = StatusCode::from_u16(self.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
@@ -464,7 +468,10 @@ impl IntoResponse for ApiErrorResponse {
             headers.insert(HeaderName::from_static(X_REQUEST_ID_HEADER), val);
         }
 
-        (status, headers, Json(self)).into_response()
+        let code_ext = ErrorCodeExtension(self.code.clone());
+        let mut response = (status, headers, Json(self)).into_response();
+        response.extensions_mut().insert(code_ext);
+        response
     }
 }
 
