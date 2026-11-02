@@ -46,7 +46,7 @@ pub const ACCESS_LOG_TARGET: &str = "omni_common::access_log";
 pub fn is_health_probe_path(path: &str) -> bool {
     matches!(
         path,
-        "/healthz" | "/livez" | "/readyz" | "/metrics" | "/health"
+        "/healthz" | "/livez" | "/readyz" | "/startupz" | "/metrics" | "/health"
     )
 }
 

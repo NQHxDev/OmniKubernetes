@@ -9,7 +9,8 @@
     "files.trimTrailingWhitespace": true,
     "files.exclude": {
         "**/target": true,
-        "**/Cargo.lock": true
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
     },
     "files.watcherExclude": {
         "**/.git/objects/**": true,
@@ -18,7 +19,8 @@
         "**/target/**": true,
         "**/coverage/**": true,
         "**/cargo-cache/**": true,
-        "**/Cargo.lock": true
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
     },
     "search.exclude": {
         "**/target": true,
@@ -29,7 +31,8 @@
         "**/cargo-cache": true,
         "**/*.profraw": true,
         "**/*.profdata": true,
-        "**/Cargo.lock": true
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
     },
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.buildScripts.enable": true,

@@ -31,3 +31,10 @@ cargo test --all
 
 - Follow Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`.
 - Stage only intentional changes; do not commit untracked scratch/debug artifacts.
+
+## 4. Code Intelligence & Navigation (Mandatory CodeGraph)
+
+- **Mandatory Policy:** This repository is indexed with **CodeGraph** (`.codegraph/`). Always use the MCP tool `codegraph_explore` or `codegraph explore` CLI **BEFORE** falling back to grep/find or raw file reads when exploring code, tracing dependencies, or understanding symbols.
+- **Blast Radius Analysis:** Use `codegraph impact <symbol>` or `codegraph callers <symbol>` before refactoring or altering interfaces.
+- **Index Synchronization:** Run `codegraph sync` after adding or restructuring codebase files.
+- Rule details: [.agents/rules/codegraph.md](.agents/rules/codegraph.md)

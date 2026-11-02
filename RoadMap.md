@@ -28,6 +28,7 @@ Hệ thống đã hoàn tất nghiệm thu hai trụ cột nền tảng đầu t
 | **Base Response & i18n Protocol**            | **ĐÃ XONG** | `omni-common`<br/>`omni-errors`  | - Data contract `ApiResponse<T>`, `ResponseMeta` zero-allocation.<br/>- Phân trang kép `OffsetPaginationMeta` & `CursorPaginationMeta`.<br/>- Đa ngôn ngữ Mozilla Fluent RCU lock-free (vi-VN, en-US, ja-JP).<br/>- Chuẩn lỗi RFC 9457 Problem Details (`application/problem+json`).<br/>- Server-side translation kết hợp Client-side localized parameters.<br/>- Ánh xạ JSON Pointer (RFC 6901) hai chiều.                                                                                                                                    |
 | **Distributed Context & Structured Logging** | **ĐÃ XONG** | `omni-logging`<br/>`omni-common` | - Định danh kép `request_id` (UUIDv7) và W3C `traceparent` (32-hex `trace_id`).<br/>- Structured Logging định dạng JSON một dòng (ECS/OTel standard).<br/>- Ghi log non-blocking qua `tracing-appender` tách biệt khỏi worker threads.<br/>- Bộ lọc PII Sanitizer bảo vệ dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP & GDPR.<br/>- Middleware tự động đo lường thời gian `Server-Timing` & `X-Response-Time`.<br/>- Cầu nối OpenTelemetry Tracing gRPC/OTLP xuất sang Grafana Tempo.                                                           |
 | **Type-Safe Configuration & Env Binding**    | **ĐÃ XONG** | `omni-common`                    | - Phân cấp nạp cấu hình 5 tầng: Safe Defaults -> `config/base.yaml` -> `config/{env}/default.yaml` -> System Environment `OMNI__*` / K8s Downward API -> Programmatic Overrides.<br/>- Fail-Fast 2 pha kiểm tra (field-level qua `validator` + bất biến liên trường & chốt chặn Production `CFG_*`).<br/>- Bảo vệ bí mật tuyệt đối Zero-Leak `SecretString` (che giấu `[REDACTED]`, tự động zeroize bộ nhớ heap, URL kết nối an toàn).<br/>- Cấu hình mở rộng kiểu tĩnh `AppConfig<C>` và cầu nối trực tiếp sang `omni_logging::LoggingConfig`. |
+| **Metrics Telemetry & Kubernetes Probes**   | **ĐÃ XONG** | `omni-metrics`<br/>`omni-errors`<br/>`omni-common` | - Bộ chỉ số RED Middleware (Rate, Errors, Duration) & In-Flight requests cho Axum.<br/>- Bảo vệ Cardinality Explosion qua Zero-Regex Byte Scanner `sanitize_uri_path` & `normalize_matched_path`.<br/>- Phân loại lỗi Zero-Copy không đọc lại body qua `ErrorCodeExtension` tích hợp với `omni-errors`.<br/>- Bộ 3 đầu dò Kubernetes Tri-Probe (`/livez`, `/readyz`, `/startupz`, `/healthz`) kết hợp Graceful Shutdown Drain Gate.<br/>- Thu thập chỉ số Tokio Runtime Saturation, Watchdog Heartbeat và Linux `/proc/self` Telemetry không dùng mã `unsafe`. |
 
 ---
 
@@ -41,10 +42,7 @@ flowchart TD
         M01["1. Base Response & i18n Protocol<br/>(omni-common, omni-errors)"]
         M02["2. Distributed Tracing & Structured Logging<br/>(omni-logging, W3C Context, PII Sanitizer)"]
         M03["3. Type-Safe Configuration & Env Binding<br/>(omni-common, Fail-Fast, Zero-Leak Secrets)"]
-    end
-
-    subgraph Phase1["GIAI ĐOẠN 1: CẤU HÌNH & QUAN SÁT TOÀN DIỆN"]
-        P2["Bước 2: Metrics Telemetry & Kubernetes Probes<br/>(omni-metrics, Prometheus RED, Healthz/Readyz)"]
+        M04["4. Metrics Telemetry & Kubernetes Probes<br/>(omni-metrics, Prometheus RED, Healthz/Readyz)"]
     end
 
     subgraph Phase2["GIAI ĐOẠN 2: LƯU TRỮ DỮ LIỆU & BỘ NHỚ ĐỆM"]
@@ -63,8 +61,7 @@ flowchart TD
         P9["Bước 9: Standard Service Scaffold & Dev Harness<br/>(AppBuilder, Testcontainers, Local Compose Stack)"]
     end
 
-    Done --> Phase1
-    Phase1 --> Phase2
+    Done --> Phase2
     Phase2 --> Phase3
     Phase3 --> Phase4
     Phase4 ==> Target["BẮT ĐẦU TRIỂN KHAI DOMAIN MICROSERVICES<br/>(gateway, auth, user, product, order, payment, notification)"]
@@ -91,9 +88,9 @@ flowchart TD
 
 ---
 
-### Bước 2: Hoàn thiện Trụ cột Quan sát thứ 3: Metrics & Kubernetes Probes
+### Bước 2: Hoàn thiện Trụ cột Quan sát thứ 3: Metrics & Kubernetes Probes - [ĐÃ HOÀN THÀNH]
 
-- **Crate thực hiện:** `libs/metrics` (`omni-metrics`).
+- **Crate thực hiện:** `libs/metrics` (`omni-metrics`) kết hợp đặc tả [`metrics-probes-telemetry-architecture.md`](./docs/architecture/metrics-probes-telemetry-architecture.md).
 - **Vấn đề giải quyết:** Hệ thống đã có **Tracing** và **Logging**, cần hoàn thiện mảnh ghép **Metrics** để phục vụ cảnh báo tự động (Alerting), giám sát tải thời gian thực và điều phối Pod tự động trên Kubernetes (HPA - Horizontal Pod Autoscaler).
 - **Các nhiệm vụ kỹ thuật cụ thể:**
   1. **Prometheus Metric Exposition:**

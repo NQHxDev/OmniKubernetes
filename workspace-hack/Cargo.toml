@@ -8,8 +8,11 @@ publish = false
 [dependencies]
 axum = { version = "0.8", features = ["macros"] }
 axum-core = { version = "0.5", default-features = false, features = ["tracing"] }
+crossbeam-utils = { version = "0.8" }
 form_urlencoded = { version = "1" }
-futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "io", "sink"] }
+futures-channel = { version = "0.3", features = ["sink"] }
+futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+hashbrown = { version = "0.16", default-features = false, features = ["default-hasher", "raw-entry"] }
 hyper = { version = "1", features = ["client", "http1", "http2", "server"] }
 hyper-util = { version = "0.1", features = ["client-legacy", "server-auto", "service"] }
 idna = { version = "1" }

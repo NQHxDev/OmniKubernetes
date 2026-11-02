@@ -159,6 +159,7 @@ fn test_noise_filtering_endpoint_matching() {
     assert!(is_health_probe_path("/healthz"));
     assert!(is_health_probe_path("/livez"));
     assert!(is_health_probe_path("/readyz"));
+    assert!(is_health_probe_path("/startupz"));
     assert!(is_health_probe_path("/metrics"));
     assert!(is_health_probe_path("/health"));
 

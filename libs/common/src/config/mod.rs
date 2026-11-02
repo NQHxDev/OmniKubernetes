@@ -31,11 +31,11 @@ pub use secret::{
     serialize_redacted_secret, validate_min_secret_entropy, validate_non_empty_secret,
 };
 pub use server::{CorsConfig, HttpServerConfig, ServiceMetaConfig};
+pub use validator::Validate;
 
 use chrono::Utc;
 use omni_logging::LoggingConfig;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
 
 /// Struct rỗng mặc định cho các Microservices không yêu cầu cấu hình nghiệp vụ mở rộng riêng.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
