@@ -209,6 +209,7 @@ where
 
         // Pha 2: Kiểm tra Bất biến Liên trường & Chốt chặn Production
         self.validate_database_guardrails(&mut issues);
+        self.validate_redis_guardrails(&mut issues);
         self.validate_auth_guardrails(&mut issues);
         self.validate_environment_guardrails(&mut issues);
 
@@ -430,6 +431,213 @@ where
                     self.i18n.default_locale, self.i18n.supported_locales
                 ),
                 env_var_hint: "OMNI__I18N__DEFAULT_LOCALE".to_string(),
+            });
+        }
+    }
+
+    fn validate_redis_guardrails(&self, issues: &mut Vec<ConfigValidationIssue>) {
+        if !self.redis.enabled {
+            return;
+        }
+
+        self.validate_redis_budgets_and_timeouts(issues);
+        self.validate_redis_keyspace_and_topology(issues);
+        self.validate_redis_production_security(issues);
+    }
+
+    fn validate_redis_budgets_and_timeouts(&self, issues: &mut Vec<ConfigValidationIssue>) {
+        // 1. CFG_REDIS_TIMEOUT_BUDGET: command_timeout_ms * 4 >= server.request_timeout_secs * 1000
+        if self.redis.command_timeout_ms * 4 >= self.server.request_timeout_secs * 1000 {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.command_timeout_ms".to_string(),
+                code: "CFG_REDIS_TIMEOUT_BUDGET".to_string(),
+                message: format!(
+                    "command_timeout_ms ({}ms * 4) must be strictly less than server.request_timeout_secs ({}ms)",
+                    self.redis.command_timeout_ms,
+                    self.server.request_timeout_secs * 1000
+                ),
+                env_var_hint: "OMNI__REDIS__COMMAND_TIMEOUT_MS".to_string(),
+            });
+        }
+
+        // 2. CFG_REDIS_LOADER_BUDGET: cache.loader_timeout_ms >= server.request_timeout_secs * 1000
+        if self.redis.cache.loader_timeout_ms >= self.server.request_timeout_secs * 1000 {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.cache.loader_timeout_ms".to_string(),
+                code: "CFG_REDIS_LOADER_BUDGET".to_string(),
+                message: format!(
+                    "loader_timeout_ms ({}ms) must be strictly less than server.request_timeout_secs ({}ms)",
+                    self.redis.cache.loader_timeout_ms,
+                    self.server.request_timeout_secs * 1000
+                ),
+                env_var_hint: "OMNI__REDIS__CACHE__LOADER_TIMEOUT_MS".to_string(),
+            });
+        }
+
+        // 3. CFG_REDIS_LEASE_ORDER: cache.lease_ttl_ms < cache.loader_timeout_ms
+        if self.redis.cache.lease_ttl_ms < self.redis.cache.loader_timeout_ms {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.cache.lease_ttl_ms".to_string(),
+                code: "CFG_REDIS_LEASE_ORDER".to_string(),
+                message: format!(
+                    "lease_ttl_ms ({}ms) must be greater than or equal to loader_timeout_ms ({}ms)",
+                    self.redis.cache.lease_ttl_ms, self.redis.cache.loader_timeout_ms
+                ),
+                env_var_hint: "OMNI__REDIS__CACHE__LEASE_TTL_MS".to_string(),
+            });
+        }
+
+        // 4. CFG_REDIS_LOCK_TTL_ORDER: lock.default_ttl_ms < 3 * command_timeout_ms or renew_interval_ratio ∉ (0, 0.5]
+        if self.redis.lock.default_ttl_ms < 3 * self.redis.command_timeout_ms
+            || self.redis.lock.renew_interval_ratio <= 0.0
+            || self.redis.lock.renew_interval_ratio > 0.5
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.lock.default_ttl_ms".to_string(),
+                code: "CFG_REDIS_LOCK_TTL_ORDER".to_string(),
+                message: format!(
+                    "lock.default_ttl_ms ({}ms) must be >= 3 * command_timeout_ms ({}ms) and renew_interval_ratio ({}) must be in (0, 0.5]",
+                    self.redis.lock.default_ttl_ms,
+                    self.redis.command_timeout_ms * 3,
+                    self.redis.lock.renew_interval_ratio
+                ),
+                env_var_hint: "OMNI__REDIS__LOCK__DEFAULT_TTL_MS".to_string(),
+            });
+        }
+
+        // 5. CFG_REDIS_TTL_ORDER: cache.default_ttl_secs > cache.max_ttl_secs or ttl_jitter_pct > 50
+        if self.redis.cache.default_ttl_secs > self.redis.cache.max_ttl_secs
+            || self.redis.cache.ttl_jitter_pct > 50
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.cache.default_ttl_secs".to_string(),
+                code: "CFG_REDIS_TTL_ORDER".to_string(),
+                message: format!(
+                    "cache.default_ttl_secs ({}s) must be <= max_ttl_secs ({}s) and ttl_jitter_pct ({}%) must be <= 50",
+                    self.redis.cache.default_ttl_secs,
+                    self.redis.cache.max_ttl_secs,
+                    self.redis.cache.ttl_jitter_pct
+                ),
+                env_var_hint: "OMNI__REDIS__CACHE__DEFAULT_TTL_SECS".to_string(),
+            });
+        }
+    }
+
+    fn validate_redis_keyspace_and_topology(&self, issues: &mut Vec<ConfigValidationIssue>) {
+        // 6. CFG_REDIS_KEY_PREFIX: must match ^[a-z0-9][a-z0-9-]{0,15}$
+        let prefix = &self.redis.key_prefix;
+        let is_valid_prefix = !prefix.is_empty()
+            && prefix.len() <= 16
+            && prefix
+                .chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())
+            && prefix
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+        if !is_valid_prefix {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.key_prefix".to_string(),
+                code: "CFG_REDIS_KEY_PREFIX".to_string(),
+                message: format!(
+                    "key_prefix ('{prefix}') must match ^[a-z0-9][a-z0-9-]{{0,15}}$ and not contain colon, braces, or whitespace"
+                ),
+                env_var_hint: "OMNI__REDIS__KEY_PREFIX".to_string(),
+            });
+        }
+
+        // 7. CFG_REDIS_CONNECTIONS_BOUNDS: connections ∉ [1, 16]
+        if !(1..=16).contains(&self.redis.connections) {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.connections".to_string(),
+                code: "CFG_REDIS_CONNECTIONS_BOUNDS".to_string(),
+                message: format!(
+                    "connections ({}) must be between 1 and 16",
+                    self.redis.connections
+                ),
+                env_var_hint: "OMNI__REDIS__CONNECTIONS".to_string(),
+            });
+        }
+
+        // 8. CFG_REDIS_POOL_SIZE_DEPRECATED (cảnh báo)
+        if self.redis.pool_size != 16 {
+            tracing::warn!(
+                field = "redis.pool_size",
+                code = "CFG_REDIS_POOL_SIZE_DEPRECATED",
+                "redis.pool_size is deprecated and ignored; use redis.connections instead"
+            );
+        }
+    }
+
+    fn validate_redis_production_security(&self, issues: &mut Vec<ConfigValidationIssue>) {
+        if !self.service.environment.is_prod() {
+            return;
+        }
+
+        if !self.redis.tls.enabled {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.tls.enabled".to_string(),
+                code: "CFG_PROD_REDIS_TLS_REQUIRED".to_string(),
+                message: "redis.tls.enabled must be true in production environment".to_string(),
+                env_var_hint: "OMNI__REDIS__TLS__ENABLED".to_string(),
+            });
+        }
+
+        if let Some(ref coord) = self.redis.coordination {
+            if !coord.tls.enabled {
+                issues.push(ConfigValidationIssue {
+                    field_path: "redis.coordination.tls.enabled".to_string(),
+                    code: "CFG_PROD_REDIS_TLS_REQUIRED".to_string(),
+                    message:
+                        "redis.coordination.tls.enabled must be true in production environment"
+                            .to_string(),
+                    env_var_hint: "OMNI__REDIS__COORDINATION__TLS__ENABLED".to_string(),
+                });
+            }
+        } else {
+            tracing::warn!(
+                code = "CFG_PROD_REDIS_COORDINATION",
+                "coordination endpoint is null in production; separating cache (LFU) and coordination (noeviction) is recommended"
+            );
+        }
+
+        let is_insecure_pass = match &self.redis.password {
+            None => true,
+            Some(p) => {
+                let s = p.expose_secret().trim();
+                s.is_empty()
+                    || matches!(
+                        s.to_ascii_lowercase().as_str(),
+                        "redis" | "password" | "default" | "root" | "admin" | "123456" | "dev_only"
+                    )
+            }
+        };
+
+        let is_insecure_user = match &self.redis.username {
+            None => true,
+            Some(u) => u.trim().is_empty() || u.eq_ignore_ascii_case("default"),
+        };
+
+        if is_insecure_pass || is_insecure_user {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.password".to_string(),
+                code: "CFG_PROD_REDIS_AUTH_REQUIRED".to_string(),
+                message: "Dedicated non-default ACL username and strong password are required in production".to_string(),
+                env_var_hint: "OMNI__REDIS__PASSWORD".to_string(),
+            });
+        }
+
+        let is_insecure_hash_secret = match &self.redis.key_hash_secret {
+            None => true,
+            Some(s) => s.expose_secret().len() < 32,
+        };
+
+        if is_insecure_hash_secret {
+            issues.push(ConfigValidationIssue {
+                field_path: "redis.key_hash_secret".to_string(),
+                code: "CFG_PROD_REDIS_KEY_HASH_SECRET".to_string(),
+                message: "key_hash_secret must be present and >= 32 bytes in production to protect PII in keys".to_string(),
+                env_var_hint: "OMNI__REDIS__KEY_HASH_SECRET".to_string(),
             });
         }
     }

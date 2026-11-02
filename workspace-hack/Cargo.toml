@@ -13,8 +13,10 @@ bitflags = { version = "2", default-features = false, features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["std"] }
-digest = { version = "0.10", features = ["std"] }
+digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["std"] }
+digest-a6292c17cd707f01 = { package = "digest", version = "0.11", features = ["alloc", "mac", "oid"] }
 either = { version = "1", features = ["serde", "use_std"] }
+event-listener = { version = "5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
@@ -29,14 +31,19 @@ log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
 num-traits = { version = "0.2", default-features = false, features = ["std"] }
 once_cell = { version = "1" }
+rand = { version = "0.9" }
+redis = { version = "1", default-features = false, features = ["connection-manager", "script", "tokio-rustls-comp"] }
 regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-build", "dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "std", "unicode"] }
 regex-syntax = { version = "0.8" }
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["ring", "std"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value"] }
-sha2 = { version = "0.10" }
+sha2-93f6ce9d446188ac = { package = "sha2", version = "0.10" }
+sha2-a6292c17cd707f01 = { package = "sha2", version = "0.11" }
 slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx-core = { version = "0.9", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "chrono", "json", "migrate", "offline", "uuid"] }
@@ -48,7 +55,6 @@ tonic = { version = "0.14" }
 tower = { version = "0.5", default-features = false, features = ["balance", "buffer", "limit", "load-shed", "log", "timeout"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
-typenum = { version = "1", default-features = false, features = ["const-generics"] }
 uuid = { version = "1", features = ["serde", "v4", "v5", "v7"] }
 zeroize = { version = "1" }
 zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
@@ -56,11 +62,14 @@ zerovec = { version = "0.11", default-features = false, features = ["alloc", "de
 [build-dependencies]
 base64 = { version = "0.22" }
 bitflags = { version = "2", default-features = false, features = ["serde"] }
+cc = { version = "1", default-features = false, features = ["parallel"] }
 chrono = { version = "0.4", features = ["serde"] }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["std"] }
-digest = { version = "0.10", features = ["std"] }
+digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["std"] }
+digest-a6292c17cd707f01 = { package = "digest", version = "0.11", features = ["alloc", "mac", "oid"] }
 either = { version = "1", features = ["serde", "use_std"] }
+event-listener = { version = "5" }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
@@ -76,10 +85,13 @@ once_cell = { version = "1" }
 regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-build", "dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "std", "unicode"] }
 regex-syntax = { version = "0.8" }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["ring", "std"] }
 serde = { version = "1", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value"] }
-sha2 = { version = "0.10" }
+sha2-93f6ce9d446188ac = { package = "sha2", version = "0.10" }
+sha2-a6292c17cd707f01 = { package = "sha2", version = "0.11" }
 slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx-core = { version = "0.9", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "chrono", "json", "migrate", "offline", "uuid"] }
@@ -91,7 +103,6 @@ tokio = { version = "1", features = ["full", "test-util"] }
 tokio-stream = { version = "0.1", features = ["fs", "net"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
-typenum = { version = "1", default-features = false, features = ["const-generics"] }
 uuid = { version = "1", features = ["serde", "v4", "v5", "v7"] }
 zeroize = { version = "1" }
 zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
@@ -99,49 +110,49 @@ zerovec = { version = "0.11", default-features = false, features = ["alloc", "de
 [target.x86_64-unknown-linux-gnu.dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.x86_64-unknown-linux-musl.dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-musl.build-dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.x86_64-apple-darwin.dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.aarch64-apple-darwin.dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
-rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs", "ring", "std", "tls12"] }
-rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs", "ring", "std"] }
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
+rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 ### END HAKARI SECTION

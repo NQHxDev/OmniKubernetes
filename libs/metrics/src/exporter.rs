@@ -66,6 +66,28 @@ pub const DB_DURATION_BUCKETS: [f64; 12] = [
     5.000, // 5.0s  - Approaching acquire/statement timeout
 ];
 
+/// Dải bucket chuẩn (đơn vị: giây) cho độ trễ cache operations (200µs đến 500ms).
+pub const CACHE_DURATION_BUCKETS: [f64; 11] = [
+    0.0002, 0.0005, 0.001, 0.002, 0.005, 0.010, 0.025, 0.050, 0.100, 0.250, 0.500,
+];
+
+/// Dải bucket chuẩn (đơn vị: giây) cho thời gian chờ hoặc giữ khóa phân tán (5ms đến 5s).
+pub const LOCK_WAIT_BUCKETS: [f64; 10] = [
+    0.005, 0.010, 0.025, 0.050, 0.100, 0.250, 0.500, 1.0, 2.5, 5.0,
+];
+
+/// Dải bucket chuẩn (đơn vị: bytes) cho kích thước payload cache (64B đến 1MB).
+pub const PAYLOAD_SIZE_BUCKETS: [f64; 8] = [
+    64.0,
+    256.0,
+    1024.0,
+    4096.0,
+    16384.0,
+    65536.0,
+    262_144.0,
+    1_048_576.0,
+];
+
 static GLOBAL_PROMETHEUS_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
 
 /// Khởi tạo và cài đặt Global Prometheus Recorder theo mô hình Idempotent Singleton.
@@ -130,6 +152,26 @@ fn create_configured_builder(config: &MetricsConfig) -> Result<PrometheusBuilder
         .set_buckets_for_metric(
             Matcher::Prefix("db_client_".to_string()),
             &DB_DURATION_BUCKETS,
+        )
+        .map_err(|e| MetricsError::RecorderInit(e.to_string()))?
+        .set_buckets_for_metric(
+            Matcher::Prefix("cache_operation_duration_seconds".to_string()),
+            &CACHE_DURATION_BUCKETS,
+        )
+        .map_err(|e| MetricsError::RecorderInit(e.to_string()))?
+        .set_buckets_for_metric(
+            Matcher::Prefix("cache_payload_bytes".to_string()),
+            &PAYLOAD_SIZE_BUCKETS,
+        )
+        .map_err(|e| MetricsError::RecorderInit(e.to_string()))?
+        .set_buckets_for_metric(
+            Matcher::Prefix("lock_hold_duration_seconds".to_string()),
+            &LOCK_WAIT_BUCKETS,
+        )
+        .map_err(|e| MetricsError::RecorderInit(e.to_string()))?
+        .set_buckets_for_metric(
+            Matcher::Prefix("lock_wait_duration_seconds".to_string()),
+            &LOCK_WAIT_BUCKETS,
         )
         .map_err(|e| MetricsError::RecorderInit(e.to_string()))?;
 

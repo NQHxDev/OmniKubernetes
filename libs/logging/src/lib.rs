@@ -49,7 +49,7 @@ pub struct LoggingGuard {
 }
 
 impl LoggingGuard {
-    /// Constructs a new guard wrapping a [`WorkerGuard`] and optional [`SdkTracerProvider`].
+    /// Constructs a new guard wrapping a [`WorkerGuard`] and optional [`opentelemetry_sdk::trace::SdkTracerProvider`].
     pub fn new(
         worker_guard: WorkerGuard,
         tracer_provider: Option<opentelemetry_sdk::trace::SdkTracerProvider>,

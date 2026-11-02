@@ -135,3 +135,5 @@ logs/
 tmp/
 temp/
 .cache/
+.archify/
+skills-lock.json

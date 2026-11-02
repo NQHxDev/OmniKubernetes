@@ -140,6 +140,47 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
     - Tự động sinh `next_cursor` và `prev_cursor`, kiểm tra `has_next_page` qua over-fetch (limit + 1).
   - **Bộ kiểm thử toàn diện:** 8 test suites bao gồm config, error taxonomy, session context, audit, pagination, instrumentation, health sentinel, và live Postgres integration tests.
 
+- Triển khai thư viện bộ nhớ đệm phân tán và kiểm soát đồng thời `omni-cache` (`libs/cache`):
+  - **Redis/Valkey Async Multiplexed Backend (`backend`, `client`):**
+    - Bộ quản lý kết nối `RedisBackend` sử dụng `redis::aio::ConnectionManager` với tự động kết nối lại (auto-reconnect) khi mất mạng.
+    - Hỗ trợ cả Redis Cluster và Sentinel topology qua cấu hình `RedisEndpoint`.
+    - `MemoryBackend` cho kiểm thử đơn vị và phát triển cục bộ không cần Redis thật.
+    - Trait `CacheBackend` trừu tượng hóa cho phép mở rộng sang các backend khác (Memcached, DragonflyDB).
+  - **6-Layer Stampede Protection Architecture (`stampede`):**
+    - **Layer 1 - In-Process Sharded Single-Flight (`single_flight.rs`):** Shard theo hash key vào 16 buckets, mỗi bucket một Tokio Mutex độc lập, ngăn chặn thundering herd trong cùng một Pod.
+    - **Layer 2 - Probabilistic TTL Jitter (`jitter.rs`):** Thêm jitter ngẫu nhiên 10-20% vào TTL để tránh hàng loạt keys hết hạn đồng loạt.
+    - **Layer 3 - XFetch (Vattani VLDB 2015) (`xfetch.rs`):** Cơ chế tái tính sớm xác suất dựa trên delta time và beta factor, giảm cache miss cho high-traffic keys.
+    - **Layer 4 - Stale-While-Revalidate / Stale-If-Error (SWR/SIE) (`swr.rs`):** Trả về dữ liệu cũ trong lúc recompute ở background, đảm bảo độ trễ P99 ổn định.
+    - **Layer 5 - Distributed Lease (`lease.rs`):** Lua script atomic `WRITE_WITH_LEASE` cấp quyền độc quyền tái tính toán cho một Pod duy nhất.
+    - **Layer 6 - Negative Caching (`negative.rs`):** Cache kết quả "không tồn tại" với TTL ngắn để chống cache penetration attacks.
+  - **Fail-Closed Distributed Locking (`lock`, `scripts`):**
+    - `DistributedLock` với monotonically increasing Fencing Tokens và Watchdog heartbeat tự động gia hạn.
+    - Lua scripts atomic (`SCRIPT_ACQUIRE_WITH_FENCE`, `SCRIPT_EXTEND`, `SCRIPT_RELEASE`) đảm bảo correctness ngay cả khi clock skew hoặc network partition.
+    - RAII Guard `LockGuard` tự động giải phóng khóa khi drop, ngăn chặn deadlock.
+    - Phân loại lý do thất bại (`LockAcquireReason`, `LockLostReason`) để debug và monitoring.
+  - **Cluster-Ready Keyspace & Clean Key Grammar (`key`):**
+    - Cấu trúc key chuẩn: `{namespace}:{entity}:{id}` với hash tags `{id}` và `{lock-ns}` cho Redis Cluster multi-key operations.
+    - HMAC-SHA256 PII masking cho sensitive identifiers (email, phone, SSN) trong cache keys.
+    - Key length validation (max 512 bytes) và character whitelist để tránh injection.
+  - **Binary Protocol with Compression & Decompression Bomb Protection (`codec`):**
+    - Wire format: 4-byte magic header + 1-byte version + 1-byte flags + 2-byte reserved + payload.
+    - Tự động nén payload > 1KB bằng `zstd` (compression level 3) để tiết kiệm bandwidth.
+    - Pre-allocation check: từ chối giải nén nếu uncompressed size > 16MB để chống decompression bomb DoS.
+  - **Kubernetes Health Integration & Slow Command Detection (`health`, `instrument`, `sentinel`):**
+    - Triển khai trait `HealthIndicator` (`omni-metrics`) qua `RedisHealthIndicator` với cached PING không gây probe thundering herd.
+    - `CacheMetricsRecorder` thu thập: `cache_operation_duration_seconds`, `cache_hits_total`, `cache_misses_total`, `cache_errors_total`, `cache_stampede_prevented_total`.
+    - Slow command logging (threshold 100ms mặc định) với `trace_id` correlation.
+    - Cache Sentinel tác vụ nền định kỳ kiểm tra kết nối và cập nhật `CacheHealthState`.
+  - **Type-Safe Cache Abstraction (`typed`):**
+    - `TypedCache<T>` với automatic serialization/deserialization qua `serde_json`.
+    - `CachePolicy` builder pattern: TTL, SWR window, negative cache TTL, compression threshold.
+    - Fail-open reads: Redis lỗi tự động fallback về loader function và ghi log mức WARN.
+  - **Invalidation Replay Buffer (`invalidation`):**
+    - `InvalidationReplayBuffer` với bounded ring buffer (capacity 10000) lưu trữ invalidation events.
+    - Hỗ trợ pattern matching: exact key, wildcard `*`, và prefix matching cho bulk invalidation.
+  - **Bộ kiểm thử toàn diện:**
+    - `libs/cache/tests/`: Integration tests với Testcontainers Redis, unit tests cho stampede protection layers, distributed lock correctness, codec round-trip, key grammar validation.
+
 - Bổ sung bộ kiểm thử đơn vị và tích hợp (`response_and_i18n_tests.rs`, `problem_details_tests.rs`, `observability_tests.rs`) cho `omni-common` và `omni-errors`.
 
 ### Changed
@@ -151,6 +192,9 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 - Bổ sung bộ buckets chuẩn `DB_DURATION_BUCKETS` và đăng ký histogram matcher prefix `db_client_` trong `omni-metrics`.
 - Cập nhật `omni-common::middleware::is_health_probe_path` để bao gồm `/startupz`, đảm bảo cả 3 đầu dò Kubernetes đều được miễn trừ khỏi APM Root Span và Access Log.
 - Cập nhật `omni-errors::ApiErrorResponse::into_response()` để đính kèm `ErrorCodeExtension` vào `Response::extensions()` phục vụ Zero-Copy error attribution trong `omni-metrics`.
+- Cập nhật `Cargo.toml` workspace và `libs/cache/Cargo.toml` để tích hợp Redis client (`redis 0.27` với `tokio-comp`, `connection-manager`), compression (`zstd`), crypto (`hmac`, `sha2`).
+- Mở rộng `omni-common::config` với `CacheSettings` và `RedisEndpoint` configuration.
+- Bổ sung bộ buckets chuẩn `CACHE_DURATION_BUCKETS` (9 mốc từ 1ms đến 5s) trong `omni-metrics`.
 - Đồng bộ `workspace-hack/Cargo.toml` qua `cargo hakari generate` sau khi thêm dependencies mới.
 
 ### Security
@@ -159,6 +203,10 @@ và phiên bản tuân theo [Semantic Versioning (SemVer)](https://semver.org).
 - **Ngăn chặn rò rỉ thông tin hạ tầng (`ApiErrorResponse::internal_server_error`, `DbError`, & `AppError::Internal`):** Tự động lọc bỏ chi tiết lỗi nhạy cảm (truy vấn SQL, thông tin kết nối cơ sở dữ liệu, stack trace) khỏi payload HTTP `500 Internal Server Error` trả về cho Client, chỉ ghi log nội bộ qua `tracing::error!` kèm `request_id` và `trace_id`. Toàn bộ thông tin đăng nhập PostgreSQL được bọc bằng `secrecy::SecretString` và hàm `redacted_url()`.
 - **Phòng chống SQL Injection:** Tận dụng `SqlSafeStr` của SQLx 0.9 bảo vệ dynamic SQL, hàm `quote_pg_literal` và percent-encoding bảo vệ SQL session variable injection trong `SET LOCAL`.
 - **Bảo vệ Cardinality Explosion DoS:** Cơ chế `sanitize_uri_path` tự động gom các request quét URL ngẫu nhiên (404 Scanning) về nhãn cố định `"__unmatched__"`, ngăn chặn tấn công làm bùng nổ số chiều Prometheus dẫn đến OOM máy chủ monitoring.
+
+- **PII Protection in Cache Keys:** HMAC-SHA256 masking cho sensitive identifiers, không bao giờ lưu raw PII vào Redis keys.
+- **Decompression Bomb Protection:** Pre-allocation check từ chối giải nén payload > 16MB để chống DoS attacks.
+- **Lock Safety with Fencing Tokens:** Monotonically increasing tokens ngăn chặn race condition khi lock holder bị timeout nhưng vẫn thực thi critical section.
 
 ---
 

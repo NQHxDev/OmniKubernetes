@@ -22,8 +22,9 @@ use metrics_exporter_prometheus::PrometheusHandle;
 pub use config::MetricsConfig;
 pub use error::MetricsError;
 pub use exporter::{
-    DB_DURATION_BUCKETS, HTTP_DURATION_BUCKETS, PROBE_DURATION_BUCKETS, PROMETHEUS_MEDIA_TYPE,
-    create_isolated_recorder, init_prometheus, metrics_router,
+    CACHE_DURATION_BUCKETS, DB_DURATION_BUCKETS, HTTP_DURATION_BUCKETS, LOCK_WAIT_BUCKETS,
+    PAYLOAD_SIZE_BUCKETS, PROBE_DURATION_BUCKETS, PROMETHEUS_MEDIA_TYPE, create_isolated_recorder,
+    init_prometheus, metrics_router,
 };
 pub use middleware::{
     InFlightGuard, METRIC_HTTP_REQUEST_DURATION_SECONDS, METRIC_HTTP_REQUEST_ERRORS_TOTAL,

@@ -474,3 +474,103 @@ fn test_database_advanced_guardrails() {
         other => panic!("Expected CFG_DB_APPLICATION_NAME, got: {other:?}"),
     }
 }
+
+#[test]
+fn test_redis_advanced_guardrails() {
+    // 1. CFG_REDIS_TIMEOUT_BUDGET: command_timeout_ms (8000ms * 4 = 32000ms) >= request_timeout_secs (30s = 30000ms)
+    let budget_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("order-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__REDIS__ENABLED", "true"),
+            ("OMNI__REDIS__COMMAND_TIMEOUT_MS", "8000"),
+            ("OMNI__SERVER__REQUEST_TIMEOUT_SECS", "30"),
+        ])
+        .load();
+
+    match budget_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues.iter().any(|i| i.code == "CFG_REDIS_TIMEOUT_BUDGET"),
+                "Must reject command_timeout_ms * 4 >= request_timeout_secs * 1000"
+            );
+        }
+        other => panic!("Expected CFG_REDIS_TIMEOUT_BUDGET, got: {other:?}"),
+    }
+
+    // 2. CFG_REDIS_LEASE_ORDER: lease_ttl_ms (1000) < loader_timeout_ms (3000)
+    let lease_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("order-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__REDIS__ENABLED", "true"),
+            ("OMNI__REDIS__CACHE__LEASE_TTL_MS", "1000"),
+            ("OMNI__REDIS__CACHE__LOADER_TIMEOUT_MS", "3000"),
+        ])
+        .load();
+
+    match lease_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues.iter().any(|i| i.code == "CFG_REDIS_LEASE_ORDER"),
+                "Must reject lease_ttl_ms < loader_timeout_ms"
+            );
+        }
+        other => panic!("Expected CFG_REDIS_LEASE_ORDER, got: {other:?}"),
+    }
+
+    // 3. CFG_REDIS_CONNECTIONS_BOUNDS: connections = 20 (must be in 1..=16)
+    let conn_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("order-service")
+        .with_environment(AppEnvironment::Dev)
+        .with_env_vars([
+            ("OMNI__REDIS__ENABLED", "true"),
+            ("OMNI__REDIS__CONNECTIONS", "20"),
+        ])
+        .load();
+
+    match conn_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues
+                    .iter()
+                    .any(|i| i.code == "CFG_REDIS_CONNECTIONS_BOUNDS"),
+                "Must reject connections > 16"
+            );
+        }
+        other => panic!("Expected CFG_REDIS_CONNECTIONS_BOUNDS, got: {other:?}"),
+    }
+}
+
+#[test]
+fn test_production_redis_guardrails() {
+    // In Production with redis enabled, TLS, Auth, and Key Hash Secret are required
+    let prod_err: Result<AppConfig, ConfigError> = ConfigLoader::for_test("prod-service")
+        .with_environment(AppEnvironment::Prod)
+        .with_env_vars([
+            ("OMNI__REDIS__ENABLED", "true"),
+            ("OMNI__REDIS__TLS__ENABLED", "false"),
+        ])
+        .load();
+
+    match prod_err {
+        Err(ConfigError::ValidationFailed(issues)) => {
+            assert!(
+                issues
+                    .iter()
+                    .any(|i| i.code == "CFG_PROD_REDIS_TLS_REQUIRED"),
+                "Must require TLS in production"
+            );
+            assert!(
+                issues
+                    .iter()
+                    .any(|i| i.code == "CFG_PROD_REDIS_AUTH_REQUIRED"),
+                "Must require strong ACL authentication in production"
+            );
+            assert!(
+                issues
+                    .iter()
+                    .any(|i| i.code == "CFG_PROD_REDIS_KEY_HASH_SECRET"),
+                "Must require key_hash_secret in production"
+            );
+        }
+        other => panic!("Expected validation issues for production Redis, got: {other:?}"),
+    }
+}
