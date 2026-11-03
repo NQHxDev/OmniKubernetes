@@ -39,7 +39,10 @@ pub use retry::{
     HEADER_IDEMPOTENCY_KEY, HEADER_X_IDEMPOTENCY_KEY, RetryBudget, RetryPolicy, execute_with_retry,
     is_idempotent_request,
 };
-pub use shutdown::{GracefulShutdownCoordinator, NoOpDrainGate, ShutdownDrainGate};
+pub use shutdown::{
+    AtomicDrainGate, GracefulShutdownCoordinator, NoOpDrainGate, ShutdownDrainGate,
+    create_probes_router,
+};
 pub use timeout::{
     CancelledError, HEADER_REQUEST_TIMEOUT, TimeoutLayer, TimeoutService, inject_deadline_header,
     with_cancellation_token,

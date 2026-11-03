@@ -1,0 +1,28 @@
+# infra/docker/redis/users.acl
+# Phân quyền truy cập Keyspace cho từng Microservice
+# Cấm triệt để lệnh FLUSHDB, FLUSHALL, KEYS * cho các service
+
+# User quản trị hệ thống (Chỉ dùng cho DevOps / Migration)
+user default on >omni_admin_secret ~* +@all
+
+# 1. Auth Service: CHỈ được thao tác trên keyspace omni:auth:*
+user auth_user on >auth_redis_secret ~omni:auth:* +@all -@dangerous -flushdb -flushall
+
+# 2. Order Service: CHỈ được thao tác trên keyspace omni:order:*
+user order_user on >order_redis_secret ~omni:order:* +@all -@dangerous -flushdb -flushall
+
+# 3. Payment Service: CHỈ được thao tác trên keyspace omni:payment:*
+user payment_user on >payment_redis_secret ~omni:payment:* +@all -@dangerous -flushdb -flushall
+
+# 4. Product Service: CHỈ được thao tác trên keyspace omni:product:*
+user product_user on >product_redis_secret ~omni:product:* +@all -@dangerous -flushdb -flushall
+
+# 5. User Service: CHỈ được thao tác trên keyspace omni:user:*
+user user_user on >user_redis_secret ~omni:user:* +@all -@dangerous -flushdb -flushall
+
+# 6. Notification Service: CHỈ được thao tác trên keyspace omni:notification:*
+user notification_user on >notification_redis_secret ~omni:notification:* +@all -@dangerous -flushdb -flushall
+
+# 7. Rate Limiter Middleware Dùng chung
+user limiter_user on >limiter_redis_secret ~omni:rate_limit:* +@all -@dangerous -flushdb -flushall
+

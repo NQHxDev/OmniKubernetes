@@ -287,7 +287,7 @@ flowchart TD
 
 ### Bước 9: Bộ khung Service mẫu & Môi trường phát triển cục bộ (Scaffold & Dev Harness)
 
-- **Crate thực hiện:** Khung mẫu `AppBootstrap` và thư mục `infra/docker`, `tests/`.
+- **Crate & Thư mục thực hiện:** Khung mẫu `AppBootstrap` / `AppBuilder` (`libs/common`), thư mục `infra/docker`, `tests/` kết hợp đặc tả kiến trúc chuẩn doanh nghiệp [`service-scaffold-dev-harness-architecture.md`](docs/architecture/service-scaffold-dev-harness-architecture.md).
 - **Vấn đề giải quyết:** Chuẩn hóa cách thức một microservice được lắp ghép từ các thư viện nền tảng, cung cấp môi trường kiểm thử tích hợp tự động không phụ thuộc hạ tầng thật.
 - **Các nhiệm vụ kỹ thuật cụ thể:**
   1. **Standard `AppBuilder` Pattern:**

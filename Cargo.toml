@@ -28,11 +28,13 @@ tower = { version = "0.5", features = ["util", "timeout", "load-shed"] }
 tower-http = { version = "0.7.1", features = [
     "trace",
     "cors",
+    "catch-panic",
     "compression-full",
     "request-id",
     "util",
 ] }
 hyper = { version = "1.6", features = ["full"] }
+socket2 = "0.6.5"
 reqwest = { version = "0.13.5", default-features = false, features = [
     "json",
     "rustls",
@@ -160,9 +162,17 @@ edition.workspace = true
 publish = false
 
 [dependencies]
+axum = { workspace = true }
+omni-common = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
 
 [[test]]
 name = "integration_k8s"
 path = "tests/integration_k8s.rs"
+harness = true
+
+[[test]]
+name = "integration_bootstrap"
+path = "tests/integration_bootstrap_tests.rs"
 harness = true

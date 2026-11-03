@@ -11,12 +11,22 @@
 //! - **Configuration & Environment Binding (`config`):** Enterprise 5-layer hierarchical configuration,
 //!   fail-fast validation, zero-leak secret protection with memory zeroization, and Kubernetes Downward API.
 
+pub mod bootstrap;
 pub mod config;
 pub mod i18n;
 pub mod middleware;
 pub mod openapi;
 pub mod resilience;
 pub mod response;
+pub mod server;
+pub mod testing;
+
+pub use bootstrap::{AppBuilder, default_not_found_handler, handle_panic};
+pub use server::{
+    bind_reuse_port_listener, serve_with_graceful_shutdown, wait_for_shutdown_signal,
+    wait_for_sigterm,
+};
+pub use testing::{TestClient, TestResponse};
 
 pub use config::{
     AppConfig, AppEnvironment, ConfigError, ConfigLoader, ConfigValidationIssue, EmptyCustomConfig,

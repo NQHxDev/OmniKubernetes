@@ -408,7 +408,7 @@ sequenceDiagram
 
     Client->>Axum: POST /api/v1/orders/heavy-process
     Axum->>UoW: Thực thi Transaction (CancellationToken gắn kèm)
-    UoW->>PG: BEGIN; SELECT ... FOR UPDATE;
+    UoW->>PG: BEGIN#59; SELECT ... FOR UPDATE#59;
     Note over Client: Hết hạn Timeout sau 5s (Client ngắt kết nối)
     Client--xAxum: TCP Disconnect / Timeout
     Axum->>UoW: Kích hoạt CancellationToken::cancel()
@@ -620,7 +620,7 @@ sequenceDiagram
     rect rgb(230, 245, 255)
         Note over Coord,Axum: GIAI ĐOẠN 4: DRAIN IN-FLIGHT HTTP REQUESTS
         Coord->>Axum: Phát tín hiệu graceful_shutdown() tới Axum Listener
-        Note over Axum: Ngừng nhận TCP connection mới; Chờ in-flight requests xử lý xong
+        Note over Axum: Ngừng nhận TCP connection mới, chờ in-flight requests xử lý xong
         Axum-->>Coord: Toàn bộ In-flight HTTP requests đã hoàn tất!
     end
 

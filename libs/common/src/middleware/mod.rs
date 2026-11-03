@@ -8,6 +8,7 @@
 
 pub mod context;
 pub mod observability;
+pub mod security;
 pub mod timing;
 pub mod traceparent;
 
@@ -16,6 +17,7 @@ pub use observability::{
     ACCESS_LOG_TARGET, inject_egress_context, inject_egress_headers, inject_grpc_egress_context,
     inject_response_headers, is_health_probe_path, observability_middleware,
 };
+pub use security::security_headers_middleware;
 pub use timing::{SERVER_TIMING_HEADER, X_RESPONSE_TIME_HEADER, timing_middleware};
 pub use traceparent::{
     TRACEPARENT_HEADER, TRACESTATE_HEADER, TraceContext, X_TRACE_ID_HEADER,
