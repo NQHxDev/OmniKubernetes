@@ -14,7 +14,7 @@ axum.workspace = true
 chrono.workspace = true
 futures.workspace = true
 metrics.workspace = true
-metrics-exporter-prometheus = { workspace = true, default-features = false }
+metrics-exporter-prometheus.workspace = true
 omni-common.workspace = true
 omni-errors.workspace = true
 serde.workspace = true
