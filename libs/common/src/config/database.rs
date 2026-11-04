@@ -8,7 +8,7 @@ use validator::Validate;
 
 use crate::config::secret::{serialize_opt_redacted_secret, serialize_redacted_secret};
 
-/// Chế độ mã hóa kết nối TLS/SSL của PostgreSQL.
+/// Chế độ mã hóa kết nối TLS/SSL của `PostgreSQL`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub enum DbSslMode {
@@ -126,10 +126,10 @@ pub struct MigrationConfig {
     /// Chế độ migration: disabled, apply, hoặc verify.
     pub mode: MigrationMode,
 
-    /// Địa chỉ máy chủ kết nối trực tiếp PostgreSQL (bỏ qua `PgBouncer`).
+    /// Địa chỉ máy chủ kết nối trực tiếp `PostgreSQL` (bỏ qua ``PgBouncer``).
     pub host: Option<String>,
 
-    /// Cổng kết nối trực tiếp PostgreSQL.
+    /// Cổng kết nối trực tiếp `PostgreSQL`.
     pub port: Option<u16>,
 
     /// Tên tài khoản có quyền DDL (schema owner).
@@ -161,18 +161,18 @@ impl Default for MigrationConfig {
     }
 }
 
-/// Cấu hình kết nối cơ sở dữ liệu PostgreSQL (`omni-database`).
+/// Cấu hình kết nối cơ sở dữ liệu `PostgreSQL` (`omni-database`).
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 #[serde(default)]
 pub struct DatabaseConfig {
     /// Cờ kích hoạt kết nối cơ sở dữ liệu.
     pub enabled: bool,
 
-    /// Địa chỉ máy chủ PostgreSQL.
+    /// Địa chỉ máy chủ `PostgreSQL`.
     #[validate(length(min = 1, message = "database.host must not be empty"))]
     pub host: String,
 
-    /// Cổng kết nối PostgreSQL (mặc định 5432).
+    /// Cổng kết nối `PostgreSQL` (mặc định 5432).
     #[validate(range(min = 1, max = 65535))]
     pub port: u16,
 
@@ -195,7 +195,7 @@ pub struct DatabaseConfig {
     /// Đường dẫn file chứng chỉ CA bundle cho chế độ verify-ca / verify-full.
     pub ssl_root_cert_path: Option<PathBuf>,
 
-    /// Tên ứng dụng gửi sang PostgreSQL (mặc định kế thừa từ `service.name`).
+    /// Tên ứng dụng gửi sang `PostgreSQL` (mặc định kế thừa từ `service.name`).
     pub application_name: Option<String>,
 
     /// Số lượng kết nối tối đa trong Connection Pool.
@@ -253,7 +253,7 @@ pub struct DatabaseConfig {
     /// Chế độ liên kết distributed trace context với câu lệnh/phiên SQL.
     pub trace_correlation: TraceCorrelation,
 
-    /// Chế độ tương thích `PgBouncer` (vô hiệu hóa startup param `options`).
+    /// Chế độ tương thích ``PgBouncer`` (vô hiệu hóa startup param `options`).
     pub pgbouncer_mode: bool,
 
     /// Cấu hình thử lại kết nối khi khởi động.

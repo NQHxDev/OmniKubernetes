@@ -1,6 +1,6 @@
 //! Apache Kafka / Redpanda Broker Driver Stub (`kafka.rs`).
 //!
-//! Provides the Kafka adapter interface conforming to [`MessagePublisher`] and [`MessageConsumer`].
+//! Provides the Kafka adapter interface conforming to [`crate::broker::MessagePublisher`] and [`crate::broker::MessageConsumer`].
 
 use crate::error::MessagingError;
 

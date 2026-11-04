@@ -21,6 +21,11 @@ fn run_kubectl(args: &[&str]) -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
+/// Helper to execute `kubectl` with the given arguments without asserting success.
+fn try_run_kubectl(args: &[&str]) -> std::io::Result<Output> {
+    Command::new("kubectl").args(args).output()
+}
+
 /// Helper to validate a YAML manifest against the Kubernetes API server (`--dry-run=server`).
 fn validate_manifest_server_dry_run(manifest_yaml: &str, resource_desc: &str) {
     let mut child = Command::new("kubectl")
@@ -251,6 +256,9 @@ fn test_infra_kubernetes_manifests() {
         return;
     }
 
+    // Ensure required namespaces exist for dry-run validation
+    ensure_namespace_exists("omni-system");
+
     let mut manifest_files = Vec::new();
     collect_yaml_files(&k8s_dir, &mut manifest_files);
 
@@ -258,6 +266,19 @@ fn test_infra_kubernetes_manifests() {
         let path_str = manifest.to_str().expect("Invalid UTF-8 path");
         run_kubectl(&["apply", "--dry-run=server", "-f", path_str]);
     }
+}
+
+/// Ensure a namespace exists (create with --dry-run=client if it doesn't).
+fn ensure_namespace_exists(namespace: &str) {
+    // Check if namespace already exists
+    let check = try_run_kubectl(&["get", "namespace", namespace]);
+
+    if check.is_ok() && check.unwrap().status.success() {
+        return; // Namespace already exists
+    }
+
+    // Create namespace for dry-run validation
+    run_kubectl(&["create", "namespace", namespace]);
 }
 
 fn collect_yaml_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {

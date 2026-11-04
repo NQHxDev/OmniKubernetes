@@ -1,7 +1,7 @@
 //! Type-Safe CloudEvent Builder Pattern (`builder.rs`).
 //!
 //! Provides a fluent, infallible builder for creating [`CloudEvent<T>`] instances with
-//! automatic UUIDv7 generation, W3C trace context injection from [`RequestContext`],
+//! automatic UUIDv7 generation, W3C trace context injection from [`omni_common::middleware::RequestContext`],
 //! and partition key derivation.
 
 use chrono::{DateTime, Utc};

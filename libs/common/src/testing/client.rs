@@ -7,7 +7,7 @@ use axum::{
 };
 use tower::ServiceExt;
 
-/// Ergonomic wrapper over an Axum HTTP [`Response`].
+/// Ergonomic wrapper over an Axum HTTP response.
 #[derive(Debug, Clone)]
 pub struct TestResponse {
     /// HTTP status code.

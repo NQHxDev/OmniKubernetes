@@ -1,6 +1,6 @@
 //! NATS JetStream Broker Driver Stub (`nats.rs`).
 //!
-//! Provides the NATS JetStream adapter interface conforming to [`MessagePublisher`] and [`MessageConsumer`].
+//! Provides the NATS JetStream adapter interface conforming to [`crate::broker::MessagePublisher`] and [`crate::broker::MessageConsumer`].
 
 use crate::error::MessagingError;
 
@@ -18,8 +18,7 @@ impl NatsBroker {
     /// Kiểm tra tính khả dụng của NATS Driver.
     pub fn ensure_supported() -> Result<(), MessagingError> {
         Err(MessagingError::Configuration(
-            "NATS JetStream driver is not enabled in this build. Compile with feature 'nats'."
-                .into(),
+            "NATS driver is not enabled in this build. Compile with feature 'nats'.".into(),
         ))
     }
 }

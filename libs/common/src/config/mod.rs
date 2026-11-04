@@ -83,12 +83,12 @@ where
     #[serde(default)]
     pub observability: ObservabilityConfig,
 
-    /// Cấu hình kết nối PostgreSQL (`omni-database`).
+    /// Cấu hình kết nối `PostgreSQL` (`omni-database`).
     #[validate(nested)]
     #[serde(default)]
     pub database: DatabaseConfig,
 
-    /// Cấu hình kết nối Redis (`omni-cache`).
+    /// Cấu hình kết nối `Redis` (`omni-cache`).
     #[validate(nested)]
     #[serde(default)]
     pub redis: RedisConfig,
