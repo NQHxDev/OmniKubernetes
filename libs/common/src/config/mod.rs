@@ -16,7 +16,10 @@ pub mod resilience;
 pub mod secret;
 pub mod server;
 
-pub use auth::{AuthConfig, JwtAlgorithm};
+pub use auth::{
+    Argon2Config, AsymmetricConfig, AuthConfig, AuthKeyMode, JwksConfig, JwtAlgorithm,
+    SupportedAlgorithm,
+};
 pub use database::{
     ConnectRetryConfig, DatabaseConfig, DbSslMode, MigrationConfig, MigrationMode, SentinelConfig,
     TraceCorrelation,
@@ -80,12 +83,12 @@ where
     #[serde(default)]
     pub observability: ObservabilityConfig,
 
-    /// Cấu hình kết nối PostgreSQL (`omni-database`).
+    /// Cấu hình kết nối `PostgreSQL` (`omni-database`).
     #[validate(nested)]
     #[serde(default)]
     pub database: DatabaseConfig,
 
-    /// Cấu hình kết nối Redis (`omni-cache`).
+    /// Cấu hình kết nối `Redis` (`omni-cache`).
     #[validate(nested)]
     #[serde(default)]
     pub redis: RedisConfig,
@@ -374,24 +377,80 @@ where
             return;
         }
 
-        let secret_len = self.auth.jwt_secret.expose_secret().len();
-        if secret_len < 32 {
-            issues.push(ConfigValidationIssue {
-                field_path: "auth.jwt_secret".to_string(),
-                code: "CFG_PROD_JWT_ENTROPY".to_string(),
-                message: format!(
-                    "auth.jwt_secret length ({secret_len} bytes) is shorter than required minimum of 32 bytes (256 bits)"
-                ),
-                env_var_hint: "OMNI__AUTH__JWT_SECRET".to_string(),
-            });
-        } else if self.service.environment.is_prod()
-            && self.auth.jwt_secret.expose_secret().contains("dev_only")
+        if self.auth.mode == AuthKeyMode::Symmetric {
+            let secret_len = self.auth.jwt_secret.expose_secret().len();
+            // TODO: Đang hardcode rất nhiều ở đây, xem rồi sửa lại
+            if secret_len < 32 {
+                issues.push(ConfigValidationIssue {
+                    field_path: "auth.jwt_secret".to_string(),
+                    code: "CFG_PROD_JWT_ENTROPY".to_string(),
+                    message: format!(
+                        "auth.jwt_secret length ({secret_len} bytes) is shorter than required minimum of 32 bytes (256 bits)"
+                    ),
+                    env_var_hint: "OMNI__AUTH__JWT_SECRET".to_string(),
+                });
+            } else if self.service.environment.is_prod()
+                && (self.auth.jwt_secret.expose_secret().contains("dev_")
+                    || self.auth.jwt_secret.expose_secret().contains("default"))
+            {
+                issues.push(ConfigValidationIssue {
+                    field_path: "auth.jwt_secret".to_string(),
+                    code: "CFG_PROD_JWT_ENTROPY".to_string(),
+                    message: "auth.jwt_secret must not use insecure development secret in production environment".to_string(),
+                    env_var_hint: "OMNI__AUTH__JWT_SECRET".to_string(),
+                });
+            }
+        }
+
+        if self.service.environment.is_prod()
+            && (self
+                .auth
+                .internal_gateway_secret
+                .expose_secret()
+                .contains("dev_")
+                || self
+                    .auth
+                    .internal_gateway_secret
+                    .expose_secret()
+                    .contains("default"))
         {
             issues.push(ConfigValidationIssue {
-                field_path: "auth.jwt_secret".to_string(),
-                code: "CFG_PROD_JWT_ENTROPY".to_string(),
-                message: "auth.jwt_secret must not use insecure development secret in production environment".to_string(),
-                env_var_hint: "OMNI__AUTH__JWT_SECRET".to_string(),
+                field_path: "auth.internal_gateway_secret".to_string(),
+                code: "CFG_AUTH_DEV_SECRET_IN_PROD".to_string(),
+                message: "auth.internal_gateway_secret must not use insecure development secret in production environment".to_string(),
+                env_var_hint: "OMNI__AUTH__INTERNAL_GATEWAY_SECRET".to_string(),
+            });
+        }
+
+        if self.auth.mode == AuthKeyMode::AsymmetricPem
+            && self.auth.asymmetric.private_key_pem.is_none()
+            && self.auth.asymmetric.public_key_pem.is_none()
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "auth.asymmetric".to_string(),
+                code: "CFG_AUTH_MISSING_ASYMMETRIC_KEYS".to_string(),
+                message: "auth.mode is 'asymmetric_pem' but both private_key_pem and public_key_pem are missing".to_string(),
+                env_var_hint: "OMNI__AUTH__ASYMMETRIC__PUBLIC_KEY_PEM".to_string(),
+            });
+        }
+
+        if self.auth.refresh_token_ttl_secs <= self.auth.access_token_ttl_secs {
+            issues.push(ConfigValidationIssue {
+                field_path: "auth.refresh_token_ttl_secs".to_string(),
+                code: "CFG_AUTH_INVALID_TTL_RATIO".to_string(),
+                message: "auth.refresh_token_ttl_secs must be strictly greater than access_token_ttl_secs".to_string(),
+                env_var_hint: "OMNI__AUTH__REFRESH_TOKEN_TTL_SECS".to_string(),
+            });
+        }
+
+        if (self.service.environment.is_prod() || self.service.environment.is_staging())
+            && (self.auth.argon2_memory_kib() < 19456 || self.auth.argon2_iterations() < 2)
+        {
+            issues.push(ConfigValidationIssue {
+                field_path: "auth.argon2".to_string(),
+                code: "CFG_AUTH_ARGON2_TOO_WEAK".to_string(),
+                message: "auth.argon2 configuration is too weak for production/staging (requires memory_kib >= 19456 and iterations >= 2)".to_string(),
+                env_var_hint: "OMNI__AUTH__ARGON2__MEMORY_KIB".to_string(),
             });
         }
     }

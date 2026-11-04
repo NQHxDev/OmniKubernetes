@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-product-ingress
+  namespace: omni-system
+  labels:
+    app.kubernetes.io/name: product-ingress
+    app.kubernetes.io/part-of: omni-platform
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Strategy A (Recommended): Strip /api/v1/products, forward only the subpath ($2) into backend pod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # Injects constant microservice route prefix for Forwarded Headers (RFC 7239 / Section 5.2.A)
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: "/api/v1/products"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  rules:
+    - host: api.omnikubernetes.com
+      http:
+        paths:
+          # Match: /api/v1/products or /api/v1/products/...
+          # Group 1: (/|$), Group 2: (.*)
+          - path: /api/v1/products(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 8080
+

@@ -55,3 +55,48 @@ err-namespace-not-found = Namespace '{$namespace}' không tồn tại trong cụ
 err-pod-quota-exceeded = Không thể tạo pod: Vượt quá giới hạn trong namespace '{$namespace}' (tối đa: {$limit}, hiện tại: {$current}).
 err-deployment-failed = Triển khai '{$deployment}' trong namespace '{$namespace}' thất bại: {$reason}.
 err-resource-conflict = Tài nguyên '{$resource}' thuộc loại '{$kind}' đã tồn tại trong namespace '{$namespace}'.
+
+# Phân hệ Nhận dạng & Bảo mật truy cập (omni-auth)
+err-auth-missing-credentials-title = Chưa cung cấp thông tin xác thực
+err-auth-missing-credentials-detail = Yêu cầu thông tin định danh xác thực trong header Authorization hoặc thông tin đăng nhập.
+ERR_AUTH_MISSING_CREDENTIALS = Yêu cầu thông tin định danh xác thực trong header Authorization hoặc thông tin đăng nhập.
+
+err-auth-token-expired-title = Mã xác thực đã hết hạn
+err-auth-token-expired-detail = Mã xác thực của bạn đã hết hạn. Vui lòng làm mới phiên làm việc bằng Refresh Token.
+ERR_AUTH_TOKEN_EXPIRED = Mã xác thực của bạn đã hết hạn. Vui lòng làm mới phiên làm việc bằng Refresh Token.
+
+err-auth-token-revoked-title = Mã xác thực đã bị thu hồi
+err-auth-token-revoked-detail = Mã xác thực đã bị thu hồi do đăng xuất, đổi mật khẩu hoặc phiên làm việc đã bị hủy.
+ERR_AUTH_TOKEN_REVOKED = Mã xác thực đã bị thu hồi do đăng xuất, đổi mật khẩu hoặc phiên làm việc đã bị hủy.
+
+err-auth-invalid-signature-title = Chữ ký số không hợp lệ
+err-auth-invalid-signature-detail = Chữ ký số của mã xác thực không hợp lệ hoặc dữ liệu đã bị can thiệp trái phép.
+ERR_AUTH_INVALID_SIGNATURE = Chữ ký số của mã xác thực không hợp lệ hoặc dữ liệu đã bị can thiệp trái phép.
+
+err-auth-malformed-token-title = Định dạng mã xác thực không hợp lệ
+err-auth-malformed-token-detail = Mã xác thực không tuân thủ đúng cấu trúc chuẩn JWT.
+ERR_AUTH_MALFORMED_TOKEN = Mã xác thực không tuân thủ đúng cấu trúc chuẩn JWT.
+
+err-auth-invalid-credentials-title = Thông tin đăng nhập không chính xác
+err-auth-invalid-credentials-detail = Tên đăng nhập hoặc mật khẩu không chính xác.
+ERR_AUTH_INVALID_CREDENTIALS = Tên đăng nhập hoặc mật khẩu không chính xác.
+
+err-auth-insufficient-roles-title = Không đủ quyền theo vai trò
+err-auth-insufficient-roles-detail = Bạn không sở hữu vai trò yêu cầu để thực hiện hành động này.
+ERR_AUTH_INSUFFICIENT_ROLES = Bạn không sở hữu vai trò yêu cầu để thực hiện hành động này.
+
+err-auth-insufficient-perms-title = Không đủ quyền hạn thực thi
+err-auth-insufficient-perms-detail = Bạn thiếu quyền hạn nghiệp vụ cụ thể cần thiết để truy cập tài nguyên.
+ERR_AUTH_INSUFFICIENT_PERMS = Bạn thiếu quyền hạn nghiệp vụ cụ thể cần thiết để truy cập tài nguyên.
+
+err-auth-tenant-mismatch-title = Không có quyền truy cập Tenant
+err-auth-tenant-mismatch-detail = Bạn không có quyền truy cập vào không gian dữ liệu của tổ chức/tenant này.
+ERR_AUTH_TENANT_MISMATCH = Bạn không có quyền truy cập vào không gian dữ liệu của tổ chức/tenant này.
+
+err-auth-signature-expired-title = Chữ ký nội bộ quá hạn
+err-auth-signature-expired-detail = Chữ ký xác thực mạng nội bộ đã hết hạn hoặc độ lệch đồng hồ vượt ngưỡng cho phép.
+ERR_AUTH_SIGNATURE_EXPIRED = Chữ ký xác thực mạng nội bộ đã hết hạn hoặc độ lệch đồng hồ vượt ngưỡng cho phép.
+
+err-auth-token-theft-detected-title = Phát hiện nguy cơ bảo mật phiên
+err-auth-token-theft-detected-detail = Phát hiện hành vi sử dụng lại token làm mới đã bị thu hồi; toàn bộ phiên liên quan đã bị hủy để đảm bảo an toàn.
+ERR_AUTH_TOKEN_THEFT_DETECTED = Phát hiện hành vi sử dụng lại token làm mới đã bị thu hồi; toàn bộ phiên liên quan đã bị hủy để đảm bảo an toàn.

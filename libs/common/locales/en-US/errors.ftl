@@ -58,3 +58,48 @@ err-namespace-not-found = Namespace '{$namespace}' does not exist in cluster '{$
 err-pod-quota-exceeded = Pod creation rejected: quota exceeded in namespace '{$namespace}' (limit: {$limit}, current: {$current}).
 err-deployment-failed = Deployment '{$deployment}' in namespace '{$namespace}' failed: {$reason}.
 err-resource-conflict = Resource '{$resource}' of kind '{$kind}' already exists in namespace '{$namespace}'.
+
+# Identity & Security Context (omni-auth)
+err-auth-missing-credentials-title = Missing Authentication Credentials
+err-auth-missing-credentials-detail = Authentication credentials are required in the Authorization header or request payload.
+ERR_AUTH_MISSING_CREDENTIALS = Authentication credentials are required in the Authorization header or request payload.
+
+err-auth-token-expired-title = Authentication Token Expired
+err-auth-token-expired-detail = Your access token has expired. Please refresh your session using a valid refresh token.
+ERR_AUTH_TOKEN_EXPIRED = Your access token has expired. Please refresh your session using a valid refresh token.
+
+err-auth-token-revoked-title = Authentication Token Revoked
+err-auth-token-revoked-detail = This token has been revoked due to user logout, password reset, or session invalidation.
+ERR_AUTH_TOKEN_REVOKED = This token has been revoked due to user logout, password reset, or session invalidation.
+
+err-auth-invalid-signature-title = Invalid Token Signature
+err-auth-invalid-signature-detail = Cryptographic signature verification failed or token payload has been tampered with.
+ERR_AUTH_INVALID_SIGNATURE = Cryptographic signature verification failed or token payload has been tampered with.
+
+err-auth-malformed-token-title = Malformed Token Structure
+err-auth-malformed-token-detail = The provided token does not conform to valid JSON Web Token format.
+ERR_AUTH_MALFORMED_TOKEN = The provided token does not conform to valid JSON Web Token format.
+
+err-auth-invalid-credentials-title = Invalid Credentials
+err-auth-invalid-credentials-detail = The supplied username or password is incorrect.
+ERR_AUTH_INVALID_CREDENTIALS = The supplied username or password is incorrect.
+
+err-auth-insufficient-roles-title = Insufficient Role
+err-auth-insufficient-roles-detail = You do not possess the required role to perform this action.
+ERR_AUTH_INSUFFICIENT_ROLES = You do not possess the required role to perform this action.
+
+err-auth-insufficient-perms-title = Insufficient Permission
+err-auth-insufficient-perms-detail = You lack the specific permission required to access this resource.
+ERR_AUTH_INSUFFICIENT_PERMS = You lack the specific permission required to access this resource.
+
+err-auth-tenant-mismatch-title = Tenant Access Denied
+err-auth-tenant-mismatch-detail = You are not authorized to access data in this tenant space.
+ERR_AUTH_TENANT_MISMATCH = You are not authorized to access data in this tenant space.
+
+err-auth-signature-expired-title = Internal Signature Expired
+err-auth-signature-expired-detail = Internal gateway signature has expired or clock skew limit has been exceeded.
+ERR_AUTH_SIGNATURE_EXPIRED = Internal gateway signature has expired or clock skew limit has been exceeded.
+
+err-auth-token-theft-detected-title = Session Security Anomaly Detected
+err-auth-token-theft-detected-detail = Refresh token reuse detected; entire token family invalidated for account security.
+ERR_AUTH_TOKEN_THEFT_DETECTED = Refresh token reuse detected; entire token family invalidated for account security.

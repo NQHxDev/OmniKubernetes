@@ -1,0 +1,34 @@
+{
+  "urls": [
+    {
+      "name": "01. Auth & IAM Service",
+      "url": "/api/v1/auth/v3/api-docs"
+    },
+    {
+      "name": "02. User & Tenant Service",
+      "url": "/api/v1/users/v3/api-docs"
+    },
+    {
+      "name": "03. Order Processing Service",
+      "url": "/api/v1/orders/v3/api-docs"
+    },
+    {
+      "name": "04. Payment & Ledger Service",
+      "url": "/api/v1/payments/v3/api-docs"
+    },
+    {
+      "name": "05. Product & Catalog Service",
+      "url": "/api/v1/products/v3/api-docs"
+    },
+    {
+      "name": "06. Notification Service",
+      "url": "/api/v1/notifications/v3/api-docs"
+    }
+  ],
+  "layout": "StandaloneLayout",
+  "deepLinking": true,
+  "persistAuthorization": true,
+  "displayRequestDuration": true,
+  "filter": true
+}
+

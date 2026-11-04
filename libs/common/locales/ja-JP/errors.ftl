@@ -55,3 +55,48 @@ err-namespace-not-found = クラスター '{$cluster_name}' にネームスペ�
 err-pod-quota-exceeded = Podの作成が拒否されました: ネームスペース '{$namespace}' のクォータ超過 (上限: {$limit}、現在: {$current})。
 err-deployment-failed = ネームスペース '{$namespace}' のデプロイ '{$deployment}' に失敗しました: {$reason}。
 err-resource-conflict = ネームスペース '{$namespace}' に種類 '{$kind}' のリソース '{$resource}' が既に存在します。
+
+# 認証・認可コンテキスト (omni-auth)
+err-auth-missing-credentials-title = 認証情報が不足しています
+err-auth-missing-credentials-detail = Authorizationヘッダーまたはリクエストに有効な認証情報が必要です。
+ERR_AUTH_MISSING_CREDENTIALS = Authorizationヘッダーまたはリクエストに有効な認証情報が必要です。
+
+err-auth-token-expired-title = 認証トークンの有効期限切れ
+err-auth-token-expired-detail = アクセストークンの有効期限が切れています。リフレッシュトークンで再認証してください。
+ERR_AUTH_TOKEN_EXPIRED = アクセストークンの有効期限が切れています。リフレッシュトークンで再認証してください。
+
+err-auth-token-revoked-title = 認証トークンは失効しています
+err-auth-token-revoked-detail = ログアウトやパスワード変更により、このトークンは失効しました。
+ERR_AUTH_TOKEN_REVOKED = ログアウトやパスワード変更により、このトークンは失効しました。
+
+err-auth-invalid-signature-title = 無効なトークン署名
+err-auth-invalid-signature-detail = トークンのデジタル署名検証に失敗したか、データが改ざんされています。
+ERR_AUTH_INVALID_SIGNATURE = トークンのデジタル署名検証に失敗したか、データが改ざんされています。
+
+err-auth-malformed-token-title = 不正な形式のトークン
+err-auth-malformed-token-detail = 提供されたトークンはJWTの標準仕様に準拠していません。
+ERR_AUTH_MALFORMED_TOKEN = 提供されたトークンはJWTの標準仕様に準拠していません。
+
+err-auth-invalid-credentials-title = 認証情報が正しくありません
+err-auth-invalid-credentials-detail = ユーザー名またはパスワードが無効です。
+ERR_AUTH_INVALID_CREDENTIALS = ユーザー名またはパスワードが無効です。
+
+err-auth-insufficient-roles-title = 必要なロールが不足しています
+err-auth-insufficient-roles-detail = この操作を実行するために必要なロールを保持していません。
+ERR_AUTH_INSUFFICIENT_ROLES = この操作を実行するために必要なロールを保持していません。
+
+err-auth-insufficient-perms-title = 必要な権限が不足しています
+err-auth-insufficient-perms-detail = このリソースにアクセスするために必要な権限がありません。
+ERR_AUTH_INSUFFICIENT_PERMS = このリソースにアクセスするために必要な権限がありません。
+
+err-auth-tenant-mismatch-title = テナントアクセスが拒否されました
+err-auth-tenant-mismatch-detail = このテナントのデータ領域へのアクセス権限がありません。
+ERR_AUTH_TENANT_MISMATCH = このテナントのデータ領域へのアクセス権限がありません。
+
+err-auth-signature-expired-title = 内部署名の有効期限切れ
+err-auth-signature-expired-detail = ゲートウェイ署名の有効期限が切れているか、クロックスキューの許容範囲を超えています。
+ERR_AUTH_SIGNATURE_EXPIRED = ゲートウェイ署名の有効期限が切れているか、クロックスキューの許容範囲を超えています。
+
+err-auth-token-theft-detected-title = セッションのセキュリティ警告
+err-auth-token-theft-detected-detail = 失効済みリフレッシュトークンの再利用を検知しました。安全のため関連セッションを無効化しました。
+ERR_AUTH_TOKEN_THEFT_DETECTED = 失効済みリフレッシュトークンの再利用を検知しました。安全のため関連セッションを無効化しました。

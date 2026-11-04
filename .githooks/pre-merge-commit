@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# ANSI color codes for pretty output
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Check current branch
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+case "$CURRENT_BRANCH" in
+    main|staging|master)
+        # Allow git pull / syncing from remote tracking branch
+        case "$GIT_REFLOG_ACTION" in
+            pull*|*origin/*|*upstream/*)
+                exit 0
+                ;;
+        esac
+
+        printf "%b\n" "\n${RED}${BOLD}✖ [BLOCKED]${NC} Direct merge into protected branch '${YELLOW}${CURRENT_BRANCH}${NC}' is not allowed at local!"
+        printf "%b\n" "  All changes must be merged via Pull Request on the remote repository."
+        printf "%b\n" "  Bypass with '--no-verify' only for emergencies.\n"
+        exit 1
+        ;;
+esac
+
+exit 0
+

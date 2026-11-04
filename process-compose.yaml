@@ -1,39 +1,30 @@
+# process-compose.yaml
+# Native Rust developer harness orchestrating backend dependencies & live-reloading services
 version: "0.5"
 
-# Process Compose configuration for OmniKubernetes
-# Docs: https://f1bonacc1.github.io/process-compose/
-
-log_level: info
-log_length: 3000
-
-environment:
-  - ENV=development
-
 processes:
-  placeholder-service:
-    description: "Placeholder service for OmniKubernetes (replace with actual services later)"
-    command: "echo 'OmniKubernetes placeholder service is ready!' && sleep 5"
-    working_dir: "."
-    availability:
-      restart: "no"
-    disabled: false
+  # Hạ tầng nền tảng (chạy qua Docker Compose)
+  infrastructure:
+    command: "docker compose -f infra/docker/docker-compose.yml up"
+    readiness_probe:
+      exec:
+        command: "docker compose -f infra/docker/docker-compose.yml ps --status running | grep -q omni-postgres"
+      initial_delay_seconds: 5
+      period_seconds: 3
+      timeout_seconds: 2
 
-  # Example template for a long-running backend/API service:
-  # api-server:
-  #   description: "OmniKubernetes API Server"
-  #   command: "echo 'Starting API server...'"
+  # Template mẫu cho các Domain Services khi chính thức triển khai:
+  # order-service:
+  #   command: "cargo watch -x 'run -p order-service'"
   #   working_dir: "."
   #   depends_on:
-  #     placeholder-service:
-  #       condition: process_completed_successfully
-  #   readiness_probe:
-  #     http_get:
-  #       host: 127.0.0.1
-  #       port: 8080
-  #       path: "/healthz"
-  #     initial_delay_seconds: 2
-  #     period_seconds: 5
-  #   availability:
-  #     restart: "on_failure"
-  #     backoff_seconds: 2
-
+  #     infrastructure:
+  #       condition: process_healthy
+  #   environment:
+  #     - APP_ENV=local
+  #     - APP_DATABASE__URL=postgres://order_user:order_dev_secret_pass@localhost:5432/order_db
+  #     - APP_REDIS__URL=redis://order_user:order_redis_secret@localhost:6379/0
+  #     - APP_REDIS__KEYSPACE_PREFIX=omni:order
+  #     - APP_SERVER__PORT=8082
+  #     - APP_LOGGING__LEVEL=debug
+  #     - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317

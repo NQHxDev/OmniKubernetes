@@ -1,0 +1,75 @@
+# Strategy B (Alternative - Preserve Prefix without Rewrite)
+# Backend services must natively mount routes and docs under /api/v1/<service>/...
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-gateway-ingress-preserve
+  namespace: omni-system
+  labels:
+    app.kubernetes.io/name: gateway-ingress-preserve
+    app.kubernetes.io/part-of: omni-platform
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  rules:
+    - host: api.omnikubernetes.com
+      http:
+        paths:
+          - path: /swagger-ui
+            pathType: Prefix
+            backend:
+              service:
+                name: swagger-ui-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/auth/...
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/users/...
+          - path: /api/v1/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/orders/...
+          - path: /api/v1/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: order-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/payments/...
+          - path: /api/v1/payments
+            pathType: Prefix
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/products/...
+          - path: /api/v1/products
+            pathType: Prefix
+            backend:
+              service:
+                name: product-service
+                port:
+                  number: 8080
+          # Preserves path; backend natively listens to /api/v1/notifications/...
+          - path: /api/v1/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8080
+

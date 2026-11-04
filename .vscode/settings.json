@@ -34,6 +34,9 @@
         "**/Cargo.lock": true,
         "**/.codegraph": true
     },
+    "rust-analyzer.linkedProjects": [
+        "${workspaceFolder}/Cargo.toml"
+    ],
     "rust-analyzer.check.command": "clippy",
     "rust-analyzer.cargo.buildScripts.enable": true,
     "rust-analyzer.procMacro.enable": true,

@@ -41,6 +41,12 @@ impl AppEnvironment {
         matches!(self, Self::Prod)
     }
 
+    /// Kiểm tra có phải môi trường Staging hay không.
+    #[must_use]
+    pub const fn is_staging(&self) -> bool {
+        matches!(self, Self::Staging)
+    }
+
     /// Kiểm tra có phải môi trường Development hay không.
     #[must_use]
     pub const fn is_dev(&self) -> bool {

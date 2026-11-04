@@ -5,12 +5,10 @@
 
 use redis::Script;
 
-// TODO: Nâng lên UUIDv7 được không?
-
 /// Script chiếm khóa phân tán nguyên tử kèm cấp phát Fencing Token:
 /// - `KEYS[1]`: Lock key (`...:lock:{ns}:r:<id>`)
 /// - `KEYS[2]`: Fencing counter key (`...:lock:{ns}:fence`)
-/// - `ARGV[1]`: Owner token `UUIDv4`
+/// - `ARGV[1]`: Owner token `UUIDv7`
 /// - `ARGV[2]`: TTL in milliseconds
 ///
 /// Trả về mảng `[status, fence_token]`: `[1, fence]` nếu thành công, `[0, 0]` nếu thất bại.
@@ -68,6 +66,10 @@ else
     return 0
 end
 ";
+
+/// Script giới hạn tần suất phân tán trượt thời gian (Sliding Window Counter).
+pub const SCRIPT_SLIDING_WINDOW_RATE_LIMIT: &str =
+    omni_common::resilience::REDIS_SLIDING_WINDOW_LUA;
 
 /// Bộ khởi tạo các [`Script`] sẵn sàng thực thi.
 #[derive(Debug, Clone)]
