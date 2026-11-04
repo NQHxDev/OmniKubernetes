@@ -8,4 +8,51 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["revocation", "axum"]
+revocation = ["dep:omni-cache"]
+axum = ["dep:axum", "dep:tower"]
+db-session = ["dep:omni-database"]
+test-util = []
+
 [dependencies]
+# Omni Workspace dependencies
+omni-common = { workspace = true }
+omni-errors = { workspace = true }
+omni-logging = { workspace = true }
+omni-metrics = { workspace = true }
+omni-cache = { workspace = true, optional = true }
+omni-database = { workspace = true, optional = true }
+
+# Web Framework & Tower
+axum = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+
+# Cryptography & Security
+argon2 = { workspace = true }
+jsonwebtoken = { workspace = true, features = ["aws_lc_rs"] }
+secrecy = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+
+# Concurrency & Async
+tokio = { workspace = true, features = ["sync", "rt"] }
+async-trait = { workspace = true }
+
+# Data Modeling & Serde
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v4", "v7", "serde"] }
+chrono = { workspace = true, features = ["serde", "clock"] }
+validator = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+metrics = { workspace = true }
+
+[dev-dependencies]
+omni-auth = { path = ".", features = ["test-util", "db-session"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+axum = { workspace = true }
+tower = { workspace = true }

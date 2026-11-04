@@ -1,0 +1,62 @@
+{
+    "rabbit_version": "3.13.0",
+    "vhosts": [
+        {
+            "name": "/omni"
+        }
+    ],
+    "users": [
+        {
+            "name": "omni",
+            "password_hash": "ZkP1k7lCjE884JbQYdYqC+kX0=",
+            "hashing_algorithm": "rabbit_password_hashing_sha256",
+            "tags": ["administrator"]
+        }
+    ],
+    "permissions": [
+        {
+            "user": "omni",
+            "vhost": "/omni",
+            "configure": ".*",
+            "write": ".*",
+            "read": ".*"
+        }
+    ],
+    "exchanges": [
+        {
+            "name": "omni.events.topic",
+            "vhost": "/omni",
+            "type": "topic",
+            "durable": true,
+            "auto_delete": false,
+            "internal": false,
+            "arguments": {}
+        }
+    ],
+    "queues": [
+        {
+            "name": "q.omni.order.payment.payment_completed",
+            "vhost": "/omni",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        },
+        {
+            "name": "q.omni.order.dlx",
+            "vhost": "/omni",
+            "durable": true,
+            "auto_delete": false,
+            "arguments": {}
+        }
+    ],
+    "bindings": [
+        {
+            "source": "omni.events.topic",
+            "vhost": "/omni",
+            "destination": "q.omni.order.payment.payment_completed",
+            "destination_type": "queue",
+            "routing_key": "omni.payment.completed",
+            "arguments": {}
+        }
+    ]
+}

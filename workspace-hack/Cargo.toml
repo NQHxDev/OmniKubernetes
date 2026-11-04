@@ -9,19 +9,23 @@ publish = false
 axum = { version = "0.8", features = ["macros"] }
 axum-core = { version = "0.5", default-features = false, features = ["tracing"] }
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
+bitflags = { version = "2", default-features = false, features = ["serde", "std"] }
 chrono = { version = "0.4", features = ["serde"] }
+crc32fast = { version = "1" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["std"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["std"] }
+digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["mac", "std"] }
 digest-a6292c17cd707f01 = { package = "digest", version = "0.11", features = ["alloc", "mac", "oid"] }
 either = { version = "1", features = ["serde", "use_std"] }
 event-listener = { version = "5" }
+fastrand = { version = "2" }
+flate2 = { version = "1", features = ["zlib-rs"] }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
-futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hashbrown = { version = "0.16" }
 hyper = { version = "1", features = ["client", "http1", "http2", "server"] }
 hyper-util = { version = "0.1", features = ["client-legacy", "server-auto", "service"] }
@@ -29,8 +33,11 @@ idna = { version = "1" }
 indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
-num-traits = { version = "0.2", default-features = false, features = ["std"] }
+num-bigint = { version = "0.4" }
+num-integer = { version = "0.1", default-features = false, features = ["i128", "std"] }
+num-traits = { version = "0.2", features = ["i128"] }
 once_cell = { version = "1" }
+percent-encoding = { version = "2" }
 rand = { version = "0.9" }
 redis = { version = "1", default-features = false, features = ["connection-manager", "script", "tokio-rustls-comp"] }
 regex = { version = "1" }
@@ -44,44 +51,53 @@ serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2-93f6ce9d446188ac = { package = "sha2", version = "0.10" }
 sha2-a6292c17cd707f01 = { package = "sha2", version = "0.11" }
+simd-adler32 = { version = "0.3", default-features = false, features = ["std"] }
 slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx-core = { version = "0.9", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "chrono", "json", "migrate", "offline", "uuid"] }
 thiserror = { version = "2" }
+time = { version = "0.3", features = ["formatting", "macros", "parsing"] }
 tinystr = { version = "0.8", features = ["zerovec"] }
 tokio = { version = "1", features = ["full", "test-util"] }
 tokio-stream = { version = "0.1", features = ["fs", "net"] }
+tokio-util = { version = "0.7", features = ["codec", "io", "rt"] }
 tonic = { version = "0.14" }
 tower = { version = "0.5", default-features = false, features = ["balance", "buffer", "limit", "load-shed", "log", "timeout"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 uuid = { version = "1", features = ["serde", "v4", "v5", "v7"] }
-zeroize = { version = "1" }
+zeroize = { version = "1", features = ["derive"] }
 zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
+zlib-rs = { version = "0.6", default-features = false, features = ["std"] }
 
 [build-dependencies]
 base64 = { version = "0.22" }
-bitflags = { version = "2", default-features = false, features = ["serde"] }
+bitflags = { version = "2", default-features = false, features = ["serde", "std"] }
 cc = { version = "1", default-features = false, features = ["parallel"] }
 chrono = { version = "0.4", features = ["serde"] }
+crc32fast = { version = "1" }
 crossbeam-utils = { version = "0.8" }
 crypto-common = { version = "0.1", default-features = false, features = ["std"] }
-digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["std"] }
+digest-93f6ce9d446188ac = { package = "digest", version = "0.10", features = ["mac", "std"] }
 digest-a6292c17cd707f01 = { package = "digest", version = "0.11", features = ["alloc", "mac", "oid"] }
+displaydoc = { version = "0.2" }
 either = { version = "1", features = ["serde", "use_std"] }
 event-listener = { version = "5" }
+flate2 = { version = "1", features = ["zlib-rs"] }
 form_urlencoded = { version = "1" }
 futures-channel = { version = "0.3", features = ["sink"] }
 futures-io = { version = "0.3" }
 futures-sink = { version = "0.3" }
-futures-util = { version = "0.3", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3", features = ["channel", "io", "sink"] }
+getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
 hashbrown = { version = "0.16" }
 idna = { version = "1" }
 indexmap = { version = "2", features = ["serde"] }
 log = { version = "0.4", default-features = false, features = ["std"] }
 memchr = { version = "2" }
-num-traits = { version = "0.2", default-features = false, features = ["std"] }
+num-traits = { version = "0.2", features = ["i128"] }
 once_cell = { version = "1" }
+percent-encoding = { version = "2" }
 regex = { version = "1" }
 regex-automata = { version = "0.4", default-features = false, features = ["dfa-build", "dfa-onepass", "hybrid", "meta", "nfa-backtrack", "perf-inline", "perf-literal", "std", "unicode"] }
 regex-syntax = { version = "0.8" }
@@ -92,11 +108,12 @@ serde_core = { version = "1", features = ["alloc", "rc"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2-93f6ce9d446188ac = { package = "sha2", version = "0.10" }
 sha2-a6292c17cd707f01 = { package = "sha2", version = "0.11" }
+simd-adler32 = { version = "0.3", default-features = false, features = ["std"] }
 slab = { version = "0.4" }
 smallvec = { version = "1", default-features = false, features = ["const_new", "serde"] }
 sqlx-core = { version = "0.9", features = ["_rt-tokio", "_tls-rustls-ring-webpki", "any", "chrono", "json", "migrate", "offline", "uuid"] }
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
-syn-f595c2ba2a3f28df = { package = "syn", version = "2", features = ["extra-traits", "full", "visit-mut"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2", features = ["extra-traits", "full", "visit", "visit-mut"] }
 thiserror = { version = "2" }
 tinystr = { version = "0.8", features = ["zerovec"] }
 tokio = { version = "1", features = ["full", "test-util"] }
@@ -104,54 +121,61 @@ tokio-stream = { version = "0.1", features = ["fs", "net"] }
 tracing = { version = "0.1", features = ["log"] }
 tracing-core = { version = "0.1" }
 uuid = { version = "1", features = ["serde", "v4", "v5", "v7"] }
-zeroize = { version = "1" }
+zeroize = { version = "1", features = ["derive"] }
 zerovec = { version = "0.11", default-features = false, features = ["alloc", "derive", "yoke"] }
+zlib-rs = { version = "0.6", default-features = false, features = ["std"] }
 
 [target.x86_64-unknown-linux-gnu.dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.x86_64-unknown-linux-musl.dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-unknown-linux-musl.build-dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.x86_64-apple-darwin.dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
+libc = { version = "0.2", features = ["extra_traits"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
+security-framework-sys = { version = "2", features = ["OSX_10_10", "OSX_10_11", "OSX_10_12", "OSX_10_9"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
+libc = { version = "0.2", features = ["extra_traits"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 
 [target.aarch64-apple-darwin.dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
 hyper-util = { version = "0.1", default-features = false, features = ["client-proxy"] }
+libc = { version = "0.2", features = ["extra_traits"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
+security-framework-sys = { version = "2", features = ["OSX_10_10", "OSX_10_11", "OSX_10_12", "OSX_10_9"] }
 tower = { version = "0.5", default-features = false, features = ["retry"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
-getrandom = { version = "0.4", default-features = false, features = ["std", "sys_rng"] }
+aws-lc-rs = { version = "1", features = ["prebuilt-nasm"] }
+libc = { version = "0.2", features = ["extra_traits"] }
 rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs", "aws_lc_rs"] }
 rustls-webpki = { version = "0.103", default-features = false, features = ["aws-lc-rs"] }
 

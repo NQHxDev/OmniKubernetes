@@ -68,15 +68,29 @@ redis:
 
 auth:
   enabled: false
+  mode: "symmetric"
   jwt_algorithm: "HS256"
-  jwt_secret: "dev_only_jwt_secret_key_must_be_at_least_32_bytes_long"
+  jwt_secret: "70d495ad341937bf4be2a135ebdc512fc3dd8d467de322bd4398348a600828aa"
+  jwt_key_id: "omni-key-2026-v1"
+  asymmetric:
+    private_key_pem: null
+    public_key_pem: null
+  jwks:
+    url: null
+    refresh_interval_secs: 3600
+    cache_ttl_secs: 86400
   access_token_ttl_secs: 900
   refresh_token_ttl_secs: 604800
+  clock_skew_leeway_secs: 30
   issuer: "urn:omni:auth"
   audience: "urn:omni:api"
-  argon2_memory_kib: 19456
-  argon2_iterations: 2
-  argon2_parallelism: 1
+  internal_gateway_secret: "0ab39320f80a42ea6ecbfb5250037f0a5c0d9f67746f36ca824ce487421c9c6d"
+  signature_max_age_secs: 30
+  argon2:
+    memory_kib: 19456
+    iterations: 2
+    parallelism: 1
+    salt_length_bytes: 16
 
 messaging:
   enabled: false
@@ -87,12 +101,31 @@ messaging:
   dlq_topic_suffix: ".dlq"
 
 resilience:
+  # 1. Rate Limiting
   rate_limit_enabled: true
   rate_limit_rps: 100
   rate_limit_burst: 200
+  distributed_rate_limit_enabled: false # Bật true khi triển khai multi-pod production kèm Redis
+
+  # 2. Concurrency & Load Shedding
+  load_shed_enabled: true
   max_concurrent_requests: 1024
+
+  # 3. Circuit Breaker
+  circuit_breaker_enabled: true
   circuit_breaker_error_threshold_pct: 50
+  circuit_breaker_min_requests: 20
   circuit_breaker_reset_timeout_secs: 30
+  circuit_breaker_half_open_probes: 5
+
+  # 4. Retry & Jitter
+  max_retry_attempts: 3
+  retry_base_delay_ms: 100
+  retry_max_delay_ms: 5000
+
+  # 5. Kubernetes Graceful Shutdown
+  shutdown_quiescence_delay_secs: 5
+  shutdown_grace_period_secs: 15
 
 i18n:
   locales_dir: "libs/common/locales"

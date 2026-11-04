@@ -36,6 +36,8 @@ async fn test_lock_acquire_success_and_fencing_token_monotonically_increases() {
     let mut guard1 = lock.try_lock().await.expect("Failed first acquire");
     assert_eq!(guard1.fencing_token(), 1);
     assert_ne!(guard1.owner_token(), "");
+    let parsed_token = uuid::Uuid::parse_str(guard1.owner_token()).expect("Valid UUID");
+    assert_eq!(parsed_token.get_version(), Some(uuid::Version::SortRand));
 
     // Release explicitly
     let released = guard1.release().await.expect("Failed to release guard1");

@@ -83,7 +83,7 @@ impl<B: CacheBackend> DistributedLock<B> {
     ///
     /// Trả về ngay lập tức `Err(CacheError::LockNotAcquired)` nếu tài nguyên đang bị khóa.
     pub async fn try_lock(&self) -> Result<LockGuard<B>, CacheError> {
-        let owner_token = Uuid::new_v4().to_string();
+        let owner_token = Uuid::now_v7().to_string();
         let ttl_ms = u64::try_from(self.default_ttl.as_millis()).unwrap_or(u64::MAX);
 
         let (acquired, fence_token) = self
@@ -218,8 +218,7 @@ impl<B: CacheBackend> LockGuard<B> {
         self.fencing_token
     }
 
-    // TODO: Liệu có nâng được lên UUIDv7 ở đây
-    /// Chuỗi định danh chủ sở hữu ngẫu nhiên `UUIDv4` của khóa này
+    /// Chuỗi định danh chủ sở hữu ngẫu nhiên `UUIDv7` của khóa này (chứa Unix timestamp ms để hỗ trợ quan sát/truy vết).
     #[must_use]
     pub fn owner_token(&self) -> &str {
         &self.owner_token

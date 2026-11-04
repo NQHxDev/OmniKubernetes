@@ -31,10 +31,10 @@ impl DistributedLease {
         }
     }
 
-    /// Tạo một lease token ngẫu nhiên duy nhất (`UUIDv4`).
+    /// Tạo một lease token ngẫu nhiên duy nhất (`UUIDv7`).
     #[must_use]
     pub fn generate_token() -> String {
-        Uuid::new_v4().to_string()
+        Uuid::now_v7().to_string()
     }
 
     /// Thời gian sống của lease (mili-giây).

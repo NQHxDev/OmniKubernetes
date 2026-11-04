@@ -20,6 +20,7 @@ pub mod health;
 pub mod instrument;
 pub mod invalidation;
 pub mod key;
+pub mod limiter;
 pub mod lock;
 pub mod scripts;
 pub mod sentinel;
@@ -38,6 +39,7 @@ pub use health::RedisHealthIndicator;
 pub use instrument::{CacheMetricsRecorder, SLOW_COMMAND_THRESHOLD_MS};
 pub use invalidation::InvalidationReplayBuffer;
 pub use key::{CacheKey, KeyHasher, KeySpace, MAX_KEY_LENGTH, make_lock_keys};
+pub use limiter::RedisRateLimiter;
 pub use lock::{DistributedLock, LockGuard};
 pub use scripts::{
     LuaScripts, SCRIPT_ACQUIRE_WITH_FENCE, SCRIPT_EXTEND, SCRIPT_RELEASE, SCRIPT_WRITE_WITH_LEASE,

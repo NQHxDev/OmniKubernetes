@@ -132,7 +132,7 @@ sequenceDiagram
     end
 
     Prom->>Recorder: GET /metrics
-    Recorder-->>Prom: 200 OK (text/plain; version=0.0.4; charset=utf-8)
+    Recorder-->>Prom: 200 OK (text/plain#59; version=0.0.4#59; charset=utf-8)
 ```
 
 ### 4.2. Từ điển Chỉ số Chuẩn Toàn Hệ thống (Enterprise Metric Catalog)

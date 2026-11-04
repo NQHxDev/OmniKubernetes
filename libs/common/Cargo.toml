@@ -17,22 +17,34 @@ config.workspace = true
 dotenvy.workspace = true
 fluent-bundle.workspace = true
 intl-memoizer.workspace = true
+metrics.workspace = true
+metrics-exporter-prometheus.workspace = true
 omni-logging.workspace = true
 opentelemetry.workspace = true
+parking_lot.workspace = true
+rand.workspace = true
 reqwest.workspace = true
 secrecy.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded.workspace = true
+socket2.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+tokio-util.workspace = true
 tonic.workspace = true
+tower.workspace = true
+tower-http.workspace = true
 tracing.workspace = true
 tracing-opentelemetry.workspace = true
 unic-langid.workspace = true
 utoipa.workspace = true
+utoipa-swagger-ui = { workspace = true, optional = true }
 uuid.workspace = true
 validator.workspace = true
 
+[features]
+default = []
+swagger-ui = ["dep:utoipa-swagger-ui"]
+
 [dev-dependencies]
-tower.workspace = true

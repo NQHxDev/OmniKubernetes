@@ -444,3 +444,9 @@ pub fn probe_router(ctx: ProbeContext) -> Router {
         .route("/health", get(livez_handler))
         .with_state(ctx)
 }
+
+impl omni_common::resilience::ShutdownDrainGate for ProbeState {
+    fn begin_shutdown(&self) {
+        Self::begin_shutdown(self);
+    }
+}

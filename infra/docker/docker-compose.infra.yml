@@ -1,0 +1,76 @@
+# Lightweight storage and message broker infrastructure (Postgres, Redis, RabbitMQ)
+
+networks:
+  omni-network:
+    name: omni-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: omni-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: omni_admin
+      POSTGRES_PASSWORD: omni_dev_admin_password
+      POSTGRES_DB: omni_default
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/01-init-common.sql:/docker-entrypoint-initdb.d/01-init-common.sql:ro
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - omni-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omni_admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: omni-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--aclfile", "/etc/redis/users.acl"]
+    volumes:
+      - redis_data:/data
+      - ./redis/users.acl:/etc/redis/users.acl:ro
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
+    ports:
+      - "6379:6379"
+    networks:
+      - omni-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "omni_admin_secret", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: omni-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: omni
+      RABBITMQ_DEFAULT_PASS: omni_rabbit_secret
+      RABBITMQ_DEFAULT_VHOST: /omni
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - omni-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: omni-user-ingress
+  namespace: omni-system
+  labels:
+    app.kubernetes.io/name: user-ingress
+    app.kubernetes.io/part-of: omni-platform
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # Strategy A (Recommended): Strip /api/v1/users, forward only the subpath ($2) into backend pod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # Injects constant microservice route prefix for Forwarded Headers (RFC 7239 / Section 5.2.A)
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: "/api/v1/users"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "15"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  rules:
+    - host: api.omnikubernetes.com
+      http:
+        paths:
+          # Match: /api/v1/users or /api/v1/users/...
+          # Group 1: (/|$), Group 2: (.*)
+          - path: /api/v1/users(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8080
+
