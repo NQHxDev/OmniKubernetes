@@ -137,3 +137,113 @@ where
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::StatusCode, response::Response};
+    use tower::{ServiceBuilder, ServiceExt, service_fn};
+    use uuid::Uuid;
+
+    fn make_user(roles: Vec<Role>) -> AuthenticatedUser {
+        AuthenticatedUser {
+            user_id: Uuid::now_v7(),
+            tenant_id: Some(Uuid::now_v7()),
+            session_id: None,
+            roles,
+            permissions: vec![],
+            email: None,
+            token_id: Uuid::now_v7(),
+        }
+    }
+
+    async fn dummy_handler(_req: Request<Body>) -> Result<Response, std::convert::Infallible> {
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::empty())
+            .unwrap())
+    }
+
+    #[tokio::test]
+    async fn test_require_role_layer_allows_matching_role() {
+        let mut svc = ServiceBuilder::new()
+            .layer(require_role(Role::Admin))
+            .service(service_fn(dummy_handler));
+
+        let mut req = Request::builder().body(Body::empty()).unwrap();
+        req.extensions_mut().insert(make_user(vec![Role::Admin]));
+
+        let resp = svc.ready().await.unwrap().call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_require_role_layer_allows_super_admin() {
+        let mut svc = ServiceBuilder::new()
+            .layer(require_role(Role::Admin))
+            .service(service_fn(dummy_handler));
+
+        let mut req = Request::builder().body(Body::empty()).unwrap();
+        req.extensions_mut()
+            .insert(make_user(vec![Role::SuperAdmin]));
+
+        let resp = svc.ready().await.unwrap().call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_require_role_layer_rejects_missing_role() {
+        let mut svc = ServiceBuilder::new()
+            .layer(require_role(Role::Admin))
+            .service(service_fn(dummy_handler));
+
+        let mut req = Request::builder().body(Body::empty()).unwrap();
+        req.extensions_mut().insert(make_user(vec![Role::User]));
+
+        let resp = svc.ready().await.unwrap().call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn test_require_role_layer_rejects_unauthenticated() {
+        let mut svc = ServiceBuilder::new()
+            .layer(require_role(Role::Admin))
+            .service(service_fn(dummy_handler));
+
+        let req = Request::builder().body(Body::empty()).unwrap();
+        let resp = svc.ready().await.unwrap().call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_require_any_role_layer() {
+        let mut svc = ServiceBuilder::new()
+            .layer(require_any_role(&[Role::Admin, Role::Operator]))
+            .service(service_fn(dummy_handler));
+
+        // Matching one role
+        let mut req1 = Request::builder().body(Body::empty()).unwrap();
+        req1.extensions_mut()
+            .insert(make_user(vec![Role::Operator]));
+        let resp1 = svc.ready().await.unwrap().call(req1).await.unwrap();
+        assert_eq!(resp1.status(), StatusCode::OK);
+
+        // Matching super admin
+        let mut req2 = Request::builder().body(Body::empty()).unwrap();
+        req2.extensions_mut()
+            .insert(make_user(vec![Role::SuperAdmin]));
+        let resp2 = svc.ready().await.unwrap().call(req2).await.unwrap();
+        assert_eq!(resp2.status(), StatusCode::OK);
+
+        // None of the roles
+        let mut req3 = Request::builder().body(Body::empty()).unwrap();
+        req3.extensions_mut().insert(make_user(vec![Role::User]));
+        let resp3 = svc.ready().await.unwrap().call(req3).await.unwrap();
+        assert_eq!(resp3.status(), StatusCode::FORBIDDEN);
+
+        // No user
+        let req4 = Request::builder().body(Body::empty()).unwrap();
+        let resp4 = svc.ready().await.unwrap().call(req4).await.unwrap();
+        assert_eq!(resp4.status(), StatusCode::UNAUTHORIZED);
+    }
+}

@@ -61,3 +61,77 @@ where
         std::future::ready(res)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::Role;
+
+    #[test]
+    fn test_current_tenant_basics() {
+        let tid = Uuid::now_v7();
+        let tenant = CurrentTenant(tid);
+
+        assert_eq!(tenant.id(), tid);
+        assert_eq!(*tenant, tid);
+        assert_eq!(tenant.to_string(), tid.to_string());
+    }
+
+    #[cfg(feature = "axum")]
+    #[tokio::test]
+    async fn test_current_tenant_from_request_parts() {
+        use axum::http::Request;
+
+        let tid = Uuid::now_v7();
+        let user_with_tenant = AuthenticatedUser {
+            user_id: Uuid::now_v7(),
+            tenant_id: Some(tid),
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec![],
+            email: None,
+            token_id: Uuid::now_v7(),
+        };
+
+        // Case 1: Authenticated user with tenant_id -> Ok
+        let mut req = Request::builder().body(()).unwrap();
+        req.extensions_mut().insert(user_with_tenant);
+        let (mut parts, ()) = req.into_parts();
+        let current_tenant = CurrentTenant::from_request_parts(&mut parts, &())
+            .await
+            .expect("Should extract tenant");
+        assert_eq!(current_tenant.id(), tid);
+
+        // Case 2: Authenticated user with None tenant_id -> Forbidden
+        let user_without_tenant = AuthenticatedUser {
+            user_id: Uuid::now_v7(),
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec![],
+            email: None,
+            token_id: Uuid::now_v7(),
+        };
+        let mut req = Request::builder().body(()).unwrap();
+        req.extensions_mut().insert(user_without_tenant);
+        let (mut parts, ()) = req.into_parts();
+        let err = CurrentTenant::from_request_parts(&mut parts, &())
+            .await
+            .unwrap_err();
+        match err {
+            omni_errors::AppError::Forbidden => {}
+            other => panic!("Expected Forbidden, got {other:?}"),
+        }
+
+        // Case 3: No user in extensions -> Forbidden
+        let empty_req = Request::builder().body(()).unwrap();
+        let (mut parts, ()) = empty_req.into_parts();
+        let err = CurrentTenant::from_request_parts(&mut parts, &())
+            .await
+            .unwrap_err();
+        match err {
+            omni_errors::AppError::Forbidden => {}
+            other => panic!("Expected Forbidden, got {other:?}"),
+        }
+    }
+}

@@ -280,3 +280,271 @@ async fn try_bearer_auth(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        config::AuthConfig,
+        middleware::signed_context::sign_gateway_context,
+        revocation::MemoryRevocationStore,
+        token::{AuthUserClaims, TokenType},
+    };
+    use axum::http::{HeaderMap, StatusCode};
+    use secrecy::SecretString;
+    use tower::{ServiceBuilder, ServiceExt, service_fn};
+
+    fn make_test_engine() -> (TokenEngine, SecretString) {
+        let gateway_secret = SecretString::from("test_gateway_shared_hmac_secret_key_12345");
+        let config = AuthConfig {
+            enabled: true,
+            jwt_secret: SecretString::from("test_jwt_secret_must_be_at_least_32_bytes_long_1234"),
+            internal_gateway_secret: gateway_secret.clone(),
+            signature_max_age_secs: 30,
+            ..Default::default()
+        };
+        (TokenEngine::new(config).unwrap(), gateway_secret)
+    }
+
+    #[test]
+    fn test_auth_layer_debug_and_builder() {
+        let (engine, _) = make_test_engine();
+        let rev_store = Arc::new(MemoryRevocationStore::new());
+        let layer = AuthLayer::new(engine).with_revocation(rev_store);
+
+        let debug_str = format!("{layer:?}");
+        assert!(debug_str.contains("AuthLayer"));
+        assert!(debug_str.contains("has_revocation: true"));
+    }
+
+    #[tokio::test]
+    async fn test_try_gateway_auth() {
+        let (engine, gateway_secret) = make_test_engine();
+
+        // 1. Missing gateway headers
+        let empty_headers = HeaderMap::new();
+        assert!(try_gateway_auth(&engine, &empty_headers).is_none());
+
+        // 2. Valid gateway headers
+        let uid = Uuid::now_v7();
+        let tid = Uuid::now_v7();
+        let uid_str = uid.to_string();
+        let tid_str = tid.to_string();
+        let ts = Utc::now().timestamp();
+        let ctx = GatewayContext::new(&uid_str, Some(&tid_str), "admin,operator", ts);
+        let sig = sign_gateway_context(&gateway_secret, &ctx).unwrap();
+
+        let mut valid_headers = HeaderMap::new();
+        valid_headers.insert(HEADER_USER_ID, uid_str.parse().unwrap());
+        valid_headers.insert(HEADER_TENANT_ID, tid_str.parse().unwrap());
+        valid_headers.insert(HEADER_USER_ROLES, "admin,operator".parse().unwrap());
+        valid_headers.insert(HEADER_OMNI_TIMESTAMP, ts.to_string().parse().unwrap());
+        valid_headers.insert(HEADER_OMNI_SIGNATURE, sig.parse().unwrap());
+
+        let res = try_gateway_auth(&engine, &valid_headers).unwrap();
+        let user = res.expect("Gateway auth should succeed");
+        assert_eq!(user.user_id, uid);
+        assert_eq!(user.tenant_id, Some(tid));
+        assert!(user.has_role(&Role::Admin));
+        assert!(user.has_role(&Role::Operator));
+
+        // 3. Invalid UUID in user_id header
+        let mut invalid_uid_headers = valid_headers.clone();
+        invalid_uid_headers.insert(HEADER_USER_ID, "not-a-valid-uuid".parse().unwrap());
+        let bad_ctx = GatewayContext::new("not-a-valid-uuid", Some(&tid_str), "admin,operator", ts);
+        let bad_sig = sign_gateway_context(&gateway_secret, &bad_ctx).unwrap();
+        invalid_uid_headers.insert(HEADER_OMNI_SIGNATURE, bad_sig.parse().unwrap());
+
+        let res = try_gateway_auth(&engine, &invalid_uid_headers).unwrap();
+        assert!(res.is_err());
+
+        // 4. Invalid timestamp
+        let mut bad_ts_headers = valid_headers.clone();
+        bad_ts_headers.insert(HEADER_OMNI_TIMESTAMP, "not-a-number".parse().unwrap());
+        let res = try_gateway_auth(&engine, &bad_ts_headers).unwrap();
+        assert!(res.is_err());
+
+        // 5. Invalid signature
+        let mut bad_sig_headers = valid_headers.clone();
+        bad_sig_headers.insert(HEADER_OMNI_SIGNATURE, "invalid_sig_hex".parse().unwrap());
+        let res = try_gateway_auth(&engine, &bad_sig_headers).unwrap();
+        assert!(res.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_try_bearer_auth() {
+        let (engine, _) = make_test_engine();
+        let rev_store: Arc<dyn RevocationStore> = Arc::new(MemoryRevocationStore::new());
+
+        // 1. Missing header
+        let headers = HeaderMap::new();
+        assert!(try_bearer_auth(&engine, None, &headers).await.is_none());
+
+        // 2. Non-Bearer authorization header
+        let mut basic_headers = HeaderMap::new();
+        basic_headers.insert(
+            axum::http::header::AUTHORIZATION,
+            "Basic abc:123".parse().unwrap(),
+        );
+        let res = try_bearer_auth(&engine, None, &basic_headers)
+            .await
+            .unwrap();
+        assert!(res.is_err());
+
+        // 3. Valid Bearer JWT
+        let sub = Uuid::now_v7();
+        let jti = Uuid::now_v7();
+        let now = Utc::now().timestamp();
+        let claims = AuthUserClaims {
+            sub,
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now + 300,
+            nbf: now - 10,
+            iat: now,
+            jti,
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec!["pods:list".to_string()],
+            email: None,
+        };
+        let token = engine.encode_claims(&claims).unwrap();
+
+        let mut bearer_headers = HeaderMap::new();
+        bearer_headers.insert(
+            axum::http::header::AUTHORIZATION,
+            format!("Bearer {token}").parse().unwrap(),
+        );
+
+        let res = try_bearer_auth(&engine, Some(&rev_store), &bearer_headers)
+            .await
+            .unwrap();
+        let user = res.expect("Valid token must decode");
+        assert_eq!(user.user_id, sub);
+        assert_eq!(user.token_id, jti);
+
+        // 4. Revoked token
+        rev_store
+            .revoke_token(jti, now + 300, "user_logout")
+            .await
+            .unwrap();
+        let res_revoked = try_bearer_auth(&engine, Some(&rev_store), &bearer_headers)
+            .await
+            .unwrap();
+        assert!(res_revoked.is_err());
+
+        // 5. Expired token
+        let expired_claims = AuthUserClaims {
+            exp: now - 60,
+            nbf: now - 120,
+            iat: now - 120,
+            ..claims
+        };
+        let expired_token = engine.encode_claims(&expired_claims).unwrap();
+        let mut expired_headers = HeaderMap::new();
+        expired_headers.insert(
+            axum::http::header::AUTHORIZATION,
+            format!("Bearer {expired_token}").parse().unwrap(),
+        );
+        let res_expired = try_bearer_auth(&engine, None, &expired_headers)
+            .await
+            .unwrap();
+        assert!(res_expired.is_err());
+    }
+
+    async fn echo_user_handler(req: Request<Body>) -> Result<Response, std::convert::Infallible> {
+        if let Some(user) = req.extensions().get::<AuthenticatedUser>() {
+            Ok(Response::builder()
+                .status(StatusCode::OK)
+                .header("x-authenticated-user", user.user_id.to_string())
+                .body(Body::empty())
+                .unwrap())
+        } else {
+            Ok(Response::builder()
+                .status(StatusCode::NO_CONTENT)
+                .body(Body::empty())
+                .unwrap())
+        }
+    }
+
+    #[tokio::test]
+    async fn test_auth_service_full_flow() {
+        let (engine, gateway_secret) = make_test_engine();
+        let layer = AuthLayer::new(engine.clone());
+
+        let mut svc = ServiceBuilder::new()
+            .layer(layer)
+            .service(service_fn(echo_user_handler));
+
+        // Request without auth headers -> NO_CONTENT (204)
+        let empty_req = Request::builder().body(Body::empty()).unwrap();
+        let resp = svc.ready().await.unwrap().call(empty_req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NO_CONTENT);
+
+        // Request with valid Bearer token -> OK (200) with header
+        let sub = Uuid::now_v7();
+        let now = Utc::now().timestamp();
+        let claims = AuthUserClaims {
+            sub,
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now + 300,
+            nbf: now,
+            iat: now,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec![],
+            email: None,
+        };
+        let token = engine.encode_claims(&claims).unwrap();
+        let bearer_req = Request::builder()
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+        let resp = svc.ready().await.unwrap().call(bearer_req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers().get("x-authenticated-user").unwrap(),
+            &sub.to_string()
+        );
+
+        // Request with valid Gateway headers -> OK (200)
+        let gw_user_id = Uuid::now_v7();
+        let gw_user_id_str = gw_user_id.to_string();
+        let ts = Utc::now().timestamp();
+        let ctx = GatewayContext::new(&gw_user_id_str, None, "admin", ts);
+        let sig = sign_gateway_context(&gateway_secret, &ctx).unwrap();
+        let gw_req = Request::builder()
+            .header(HEADER_USER_ID, &gw_user_id_str)
+            .header(HEADER_USER_ROLES, "admin")
+            .header(HEADER_OMNI_TIMESTAMP, ts.to_string())
+            .header(HEADER_OMNI_SIGNATURE, sig)
+            .body(Body::empty())
+            .unwrap();
+        let resp = svc.ready().await.unwrap().call(gw_req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers().get("x-authenticated-user").unwrap(),
+            &gw_user_id.to_string()
+        );
+
+        // Request with invalid Bearer token -> UNAUTHORIZED (401)
+        let bad_token_req = Request::builder()
+            .header("Authorization", "Bearer invalid.jwt.token")
+            .body(Body::empty())
+            .unwrap();
+        let resp = svc
+            .ready()
+            .await
+            .unwrap()
+            .call(bad_token_req)
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+}

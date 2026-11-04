@@ -158,3 +158,52 @@ pub mod cache_store {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_revocation_entry_serde() {
+        let jti = Uuid::now_v7();
+        let entry = RevocationEntry {
+            jti,
+            revoked_at: 1_700_000_000,
+            reason: "admin_revocation".to_string(),
+            expires_at: 1_700_000_900,
+        };
+
+        let json = serde_json::to_string(&entry).unwrap();
+        let de: RevocationEntry = serde_json::from_str(&json).unwrap();
+        assert_eq!(entry, de);
+    }
+
+    #[tokio::test]
+    async fn test_memory_revocation_store_lifecycle() {
+        let store = MemoryRevocationStore::new();
+        let jti1 = Uuid::now_v7();
+        let jti2 = Uuid::now_v7();
+
+        // 1. Initial state: not revoked
+        assert!(!store.is_token_revoked(jti1).await.unwrap());
+        assert!(!store.is_token_revoked(jti2).await.unwrap());
+
+        // 2. Revoke jti1
+        let now = Utc::now().timestamp();
+        store
+            .revoke_token(jti1, now + 3600, "logout")
+            .await
+            .expect("Revocation should succeed");
+
+        // 3. jti1 is revoked, jti2 is still not revoked
+        assert!(store.is_token_revoked(jti1).await.unwrap());
+        assert!(!store.is_token_revoked(jti2).await.unwrap());
+
+        // 4. Revoke jti2
+        store
+            .revoke_token(jti2, now + 3600, "suspicious_activity")
+            .await
+            .expect("Revocation should succeed");
+        assert!(store.is_token_revoked(jti2).await.unwrap());
+    }
+}

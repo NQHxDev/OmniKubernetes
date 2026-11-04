@@ -171,3 +171,227 @@ impl AuthUserClaims {
         permissions.iter().all(|p| self.has_permission(p))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_token_type_display_and_serde() {
+        assert_eq!(TokenType::Access.to_string(), "access");
+        assert_eq!(TokenType::Refresh.to_string(), "refresh");
+        assert_eq!(TokenType::ApiKey.to_string(), "api_key");
+
+        let access_json = serde_json::to_string(&TokenType::Access).unwrap();
+        assert_eq!(access_json, "\"access\"");
+        let deserialized: TokenType = serde_json::from_str(&access_json).unwrap();
+        assert_eq!(deserialized, TokenType::Access);
+
+        let refresh_json = serde_json::to_string(&TokenType::Refresh).unwrap();
+        assert_eq!(refresh_json, "\"refresh\"");
+        let deserialized_refresh: TokenType = serde_json::from_str(&refresh_json).unwrap();
+        assert_eq!(deserialized_refresh, TokenType::Refresh);
+
+        let api_key_json = serde_json::to_string(&TokenType::ApiKey).unwrap();
+        assert_eq!(api_key_json, "\"api_key\"");
+        let deserialized_api_key: TokenType = serde_json::from_str(&api_key_json).unwrap();
+        assert_eq!(deserialized_api_key, TokenType::ApiKey);
+    }
+
+    #[test]
+    fn test_role_methods_and_from_str() {
+        assert_eq!(Role::SuperAdmin.as_str(), "super_admin");
+        assert_eq!(Role::Admin.as_str(), "admin");
+        assert_eq!(Role::Operator.as_str(), "operator");
+        assert_eq!(Role::User.as_str(), "user");
+        assert_eq!(Role::ServiceAccount.as_str(), "service_account");
+        assert_eq!(Role::Custom("billing".to_string()).as_str(), "billing");
+
+        assert_eq!(Role::SuperAdmin.to_string(), "super_admin");
+        assert_eq!(
+            Role::Custom("custom_role".into()).to_string(),
+            "custom_role"
+        );
+
+        assert_eq!(Role::from_str("super_admin").unwrap(), Role::SuperAdmin);
+        assert_eq!(Role::from_str("SUPERADMIN").unwrap(), Role::SuperAdmin);
+        assert_eq!(Role::from_str("admin").unwrap(), Role::Admin);
+        assert_eq!(Role::from_str("Operator").unwrap(), Role::Operator);
+        assert_eq!(Role::from_str("user").unwrap(), Role::User);
+        assert_eq!(
+            Role::from_str("service_account").unwrap(),
+            Role::ServiceAccount
+        );
+        assert_eq!(
+            Role::from_str("ServiceAccount").unwrap(),
+            Role::ServiceAccount
+        );
+        assert_eq!(
+            Role::from_str(" auditor ").unwrap(),
+            Role::Custom("auditor".to_string())
+        );
+
+        let serialized = serde_json::to_string(&Role::Admin).unwrap();
+        assert_eq!(serialized, "\"admin\"");
+        let deserialized: Role = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, Role::Admin);
+
+        let custom_ser = serde_json::to_string(&Role::Custom("support".to_string())).unwrap();
+        let custom_de: Role = serde_json::from_str(&custom_ser).unwrap();
+        assert_eq!(custom_de, Role::Custom("support".to_string()));
+    }
+
+    #[test]
+    fn test_claims_is_expired_at() {
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 1000,
+            nbf: 900,
+            iat: 900,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec![],
+            email: None,
+        };
+
+        // exp = 1000, leeway = 10 -> boundary is 1010
+        assert!(!claims.is_expired_at(999, 10));
+        assert!(!claims.is_expired_at(1005, 10));
+        assert!(claims.is_expired_at(1010, 10));
+        assert!(claims.is_expired_at(1020, 10));
+    }
+
+    #[test]
+    fn test_claims_super_admin_bypass() {
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 2000,
+            nbf: 1000,
+            iat: 1000,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::SuperAdmin],
+            permissions: vec![],
+            email: None,
+        };
+
+        assert!(claims.is_super_admin());
+        assert!(claims.has_role(&Role::Admin));
+        assert!(claims.has_role(&Role::User));
+        assert!(claims.has_role(&Role::Custom("unknown".to_string())));
+        assert!(claims.has_any_role(&[Role::Operator]));
+        assert!(claims.has_permission("users:delete"));
+        assert!(claims.has_all_permissions(&["any:one", "any:two"]));
+    }
+
+    #[test]
+    fn test_claims_normal_role_checks() {
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 2000,
+            nbf: 1000,
+            iat: 1000,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User, Role::Operator],
+            permissions: vec![],
+            email: None,
+        };
+
+        assert!(!claims.is_super_admin());
+        assert!(claims.has_role(&Role::User));
+        assert!(claims.has_role(&Role::Operator));
+        assert!(!claims.has_role(&Role::Admin));
+        assert!(claims.has_any_role(&[Role::Admin, Role::User]));
+        assert!(!claims.has_any_role(&[Role::Admin, Role::SuperAdmin]));
+    }
+
+    #[test]
+    fn test_claims_permission_wildcards() {
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 2000,
+            nbf: 1000,
+            iat: 1000,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec!["orders:*".to_string(), "users:read".to_string()],
+            email: None,
+        };
+
+        assert!(claims.has_permission("orders:read"));
+        assert!(claims.has_permission("orders:write"));
+        assert!(claims.has_permission("orders:delete"));
+        assert!(claims.has_permission("users:read"));
+        assert!(!claims.has_permission("users:write"));
+        assert!(!claims.has_permission("billing:read"));
+
+        assert!(claims.has_all_permissions(&["orders:read", "users:read"]));
+        assert!(!claims.has_all_permissions(&["orders:read", "users:write"]));
+
+        // Global wildcard
+        let wildcard_claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 2000,
+            nbf: 1000,
+            iat: 1000,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec!["*".to_string()],
+            email: None,
+        };
+        assert!(wildcard_claims.has_permission("anything:at:all"));
+        assert!(wildcard_claims.has_all_permissions(&["p1", "p2", "p3"]));
+    }
+
+    #[test]
+    fn test_claims_serde_roundtrip() {
+        let sub = Uuid::now_v7();
+        let jti = Uuid::now_v7();
+        let tenant_id = Some(Uuid::now_v7());
+        let session_id = Some(Uuid::now_v7());
+
+        let claims = AuthUserClaims {
+            sub,
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: 1_700_000_000,
+            nbf: 1_699_990_000,
+            iat: 1_699_990_000,
+            jti,
+            token_type: TokenType::Access,
+            tenant_id,
+            session_id,
+            roles: vec![Role::Admin, Role::Custom("auditor".to_string())],
+            permissions: vec!["orders:read".to_string()],
+            email: Some("admin@omni.internal".to_string()),
+        };
+
+        let json = serde_json::to_string(&claims).unwrap();
+        let deserialized: AuthUserClaims = serde_json::from_str(&json).unwrap();
+        assert_eq!(claims, deserialized);
+    }
+}

@@ -51,3 +51,22 @@ impl CryptoTimer {
         record_crypto_duration(self.operation, elapsed);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_instrumentation_functions_execute_cleanly() {
+        record_token_validation("success", "HS256");
+        record_token_validation("failure", "RS256");
+        record_auth_failure("token_expired");
+        record_crypto_duration("argon2_hash", 0.025);
+
+        let timer = CryptoTimer::start("jwt_sign");
+        let debug_str = format!("{timer:?}");
+        assert!(debug_str.contains("CryptoTimer"));
+        assert!(debug_str.contains("jwt_sign"));
+        timer.complete();
+    }
+}

@@ -102,3 +102,91 @@ pub fn verify_gateway_signature(
         Err(_) => Ok(false),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gateway_context_canonical() {
+        let ctx_with_tenant =
+            GatewayContext::new("usr-123", Some("tnt-456"), "admin,user", 1_700_000_000);
+        assert_eq!(
+            ctx_with_tenant.canonical(),
+            "usr-123:tnt-456:admin,user:1700000000"
+        );
+
+        let ctx_no_tenant = GatewayContext::new("usr-123", None, "admin", 1_700_000_000);
+        assert_eq!(ctx_no_tenant.canonical(), "usr-123::admin:1700000000");
+    }
+
+    #[test]
+    fn test_sign_and_verify_gateway_context_happy_path() {
+        let secret = SecretString::from("gateway_internal_secret_key_1234567890");
+        let ts = 1_700_000_000;
+        let ctx = GatewayContext::new("usr-1", Some("tnt-1"), "operator", ts);
+
+        let sig = sign_gateway_context(&secret, &ctx).expect("Sign should succeed");
+        assert_ne!(sig, "");
+
+        let is_valid = verify_gateway_signature(&secret, &ctx, ts + 5, 30, &sig)
+            .expect("Verification should succeed");
+        assert!(is_valid);
+    }
+
+    #[test]
+    fn test_verify_gateway_signature_expired_timestamp() {
+        let secret = SecretString::from("gateway_internal_secret_key_1234567890");
+        let ts = 1_700_000_000;
+        let ctx = GatewayContext::new("usr-1", None, "admin", ts);
+        let sig = sign_gateway_context(&secret, &ctx).unwrap();
+
+        // 31 seconds in future (> 30s max age)
+        let res_past = verify_gateway_signature(&secret, &ctx, ts + 31, 30, &sig);
+        assert!(matches!(res_past, Err(AuthError::SignatureExpired)));
+
+        // 31 seconds in past (< -30s max age)
+        let res_future = verify_gateway_signature(&secret, &ctx, ts - 31, 30, &sig);
+        assert!(matches!(res_future, Err(AuthError::SignatureExpired)));
+    }
+
+    #[test]
+    fn test_verify_gateway_signature_tampered_payload() {
+        let secret = SecretString::from("gateway_internal_secret_key_1234567890");
+        let ts = 1_700_000_000;
+        let ctx = GatewayContext::new("usr-1", Some("tnt-1"), "user", ts);
+        let sig = sign_gateway_context(&secret, &ctx).unwrap();
+
+        // Tamper roles to "admin"
+        let tampered_ctx = GatewayContext::new("usr-1", Some("tnt-1"), "admin", ts);
+        let is_valid = verify_gateway_signature(&secret, &tampered_ctx, ts, 30, &sig).unwrap();
+        assert!(!is_valid);
+
+        // Tamper user_id
+        let tampered_ctx2 = GatewayContext::new("usr-2", Some("tnt-1"), "user", ts);
+        let is_valid2 = verify_gateway_signature(&secret, &tampered_ctx2, ts, 30, &sig).unwrap();
+        assert!(!is_valid2);
+    }
+
+    #[test]
+    fn test_verify_gateway_signature_tampered_secret() {
+        let secret1 = SecretString::from("gateway_internal_secret_key_1234567890");
+        let secret2 = SecretString::from("different_secret_key_0987654321");
+        let ts = 1_700_000_000;
+        let ctx = GatewayContext::new("usr-1", None, "user", ts);
+        let sig = sign_gateway_context(&secret1, &ctx).unwrap();
+
+        let is_valid = verify_gateway_signature(&secret2, &ctx, ts, 30, &sig).unwrap();
+        assert!(!is_valid);
+    }
+
+    #[test]
+    fn test_verify_gateway_signature_invalid_hex() {
+        let secret = SecretString::from("gateway_internal_secret_key_1234567890");
+        let ts = 1_700_000_000;
+        let ctx = GatewayContext::new("usr-1", None, "user", ts);
+
+        let res = verify_gateway_signature(&secret, &ctx, ts, 30, "not_valid_hex!@#$");
+        assert!(matches!(res, Err(AuthError::InvalidSignatureFormat)));
+    }
+}

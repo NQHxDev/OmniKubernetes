@@ -272,3 +272,210 @@ impl axum::response::IntoResponse for AuthError {
 
 /// Kết quả alias chuẩn cho các tác vụ Auth.
 pub type AuthResult<T> = Result<T, AuthError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_codes() {
+        assert_eq!(
+            AuthError::MissingCredentials.code(),
+            ERR_AUTH_MISSING_CREDENTIALS
+        );
+        assert_eq!(AuthError::TokenExpired.code(), ERR_AUTH_TOKEN_EXPIRED);
+        assert_eq!(AuthError::TokenRevoked.code(), ERR_AUTH_TOKEN_REVOKED);
+        assert_eq!(
+            AuthError::InvalidSignature.code(),
+            ERR_AUTH_INVALID_SIGNATURE
+        );
+        assert_eq!(
+            AuthError::InvalidSignatureFormat.code(),
+            ERR_AUTH_INVALID_SIGNATURE
+        );
+        assert_eq!(
+            AuthError::MalformedToken("bad".into()).code(),
+            ERR_AUTH_MALFORMED_TOKEN
+        );
+        assert_eq!(AuthError::TokenNotYetValid.code(), ERR_AUTH_MALFORMED_TOKEN);
+        assert_eq!(AuthError::InvalidIssuer.code(), ERR_AUTH_MALFORMED_TOKEN);
+        assert_eq!(AuthError::InvalidAudience.code(), ERR_AUTH_MALFORMED_TOKEN);
+        assert_eq!(
+            AuthError::InvalidCredentials.code(),
+            ERR_AUTH_INVALID_CREDENTIALS
+        );
+        assert_eq!(
+            AuthError::InsufficientRole.code(),
+            ERR_AUTH_INSUFFICIENT_ROLES
+        );
+        assert_eq!(
+            AuthError::InsufficientPermission("perm".into()).code(),
+            ERR_AUTH_INSUFFICIENT_PERMS
+        );
+        assert_eq!(AuthError::TenantMismatch.code(), ERR_AUTH_TENANT_MISMATCH);
+        assert_eq!(
+            AuthError::SignatureExpired.code(),
+            ERR_AUTH_SIGNATURE_EXPIRED
+        );
+        assert_eq!(
+            AuthError::TokenTheftDetected.code(),
+            ERR_AUTH_TOKEN_THEFT_DETECTED
+        );
+        assert_eq!(
+            AuthError::CryptoConfiguration("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::PasswordHashingFailed("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::PasswordVerificationFailed("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::InvalidHashFormat("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::TokenEncodingFailed("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::InternalTaskPanic("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+        assert_eq!(
+            AuthError::RevocationStoreError("err".into()).code(),
+            "ERR_AUTH_INTERNAL"
+        );
+    }
+
+    #[test]
+    fn test_status_codes() {
+        assert_eq!(AuthError::MissingCredentials.status_code(), 401);
+        assert_eq!(AuthError::TokenExpired.status_code(), 401);
+        assert_eq!(AuthError::TokenRevoked.status_code(), 401);
+        assert_eq!(AuthError::InvalidSignature.status_code(), 401);
+        assert_eq!(AuthError::MalformedToken("test".into()).status_code(), 401);
+        assert_eq!(AuthError::InvalidCredentials.status_code(), 401);
+        assert_eq!(AuthError::SignatureExpired.status_code(), 401);
+        assert_eq!(AuthError::InvalidSignatureFormat.status_code(), 401);
+        assert_eq!(AuthError::TokenNotYetValid.status_code(), 401);
+        assert_eq!(AuthError::InvalidIssuer.status_code(), 401);
+        assert_eq!(AuthError::InvalidAudience.status_code(), 401);
+        assert_eq!(AuthError::TokenTheftDetected.status_code(), 401);
+
+        assert_eq!(AuthError::InsufficientRole.status_code(), 403);
+        assert_eq!(
+            AuthError::InsufficientPermission("act".into()).status_code(),
+            403
+        );
+        assert_eq!(AuthError::TenantMismatch.status_code(), 403);
+
+        assert_eq!(
+            AuthError::CryptoConfiguration("c".into()).status_code(),
+            500
+        );
+        assert_eq!(
+            AuthError::PasswordHashingFailed("h".into()).status_code(),
+            500
+        );
+        assert_eq!(
+            AuthError::PasswordVerificationFailed("v".into()).status_code(),
+            500
+        );
+        assert_eq!(AuthError::InvalidHashFormat("f".into()).status_code(), 500);
+        assert_eq!(
+            AuthError::TokenEncodingFailed("e".into()).status_code(),
+            500
+        );
+        assert_eq!(AuthError::InternalTaskPanic("p".into()).status_code(), 500);
+        assert_eq!(
+            AuthError::RevocationStoreError("s".into()).status_code(),
+            500
+        );
+    }
+
+    #[test]
+    fn test_error_types() {
+        assert_eq!(
+            AuthError::MissingCredentials.error_type(),
+            TYPE_AUTH_MISSING
+        );
+        assert_eq!(AuthError::TokenExpired.error_type(), TYPE_AUTH_EXPIRED);
+        assert_eq!(AuthError::TokenRevoked.error_type(), TYPE_AUTH_REVOKED);
+        assert_eq!(AuthError::SignatureExpired.error_type(), TYPE_AUTH_REVOKED);
+        assert_eq!(
+            AuthError::TokenTheftDetected.error_type(),
+            TYPE_AUTH_REVOKED
+        );
+        assert_eq!(
+            AuthError::InvalidSignature.error_type(),
+            TYPE_AUTH_INVALID_SIG
+        );
+        assert_eq!(
+            AuthError::InvalidSignatureFormat.error_type(),
+            TYPE_AUTH_INVALID_SIG
+        );
+        assert_eq!(
+            AuthError::MalformedToken("x".into()).error_type(),
+            TYPE_AUTH_MALFORMED
+        );
+        assert_eq!(
+            AuthError::TokenNotYetValid.error_type(),
+            TYPE_AUTH_MALFORMED
+        );
+        assert_eq!(AuthError::InvalidIssuer.error_type(), TYPE_AUTH_MALFORMED);
+        assert_eq!(AuthError::InvalidAudience.error_type(), TYPE_AUTH_MALFORMED);
+        assert_eq!(
+            AuthError::InvalidCredentials.error_type(),
+            TYPE_AUTH_CREDENTIALS
+        );
+        assert_eq!(AuthError::InsufficientRole.error_type(), TYPE_AUTH_ROLES);
+        assert_eq!(
+            AuthError::InsufficientPermission("p".into()).error_type(),
+            TYPE_AUTH_PERMS
+        );
+        assert_eq!(AuthError::TenantMismatch.error_type(), TYPE_AUTH_TENANT);
+        assert_eq!(
+            AuthError::CryptoConfiguration("e".into()).error_type(),
+            TYPE_AUTH_INTERNAL
+        );
+    }
+
+    #[test]
+    fn test_to_problem_and_from_conversion() {
+        let i18n = I18nManager::default();
+        let meta = ResponseMeta::default();
+        let err = AuthError::MissingCredentials;
+        let problem = err.to_problem("/api/v1/resource", meta, &i18n);
+
+        assert_eq!(problem.status, 401);
+        assert_eq!(problem.code, ERR_AUTH_MISSING_CREDENTIALS);
+        assert_eq!(problem.instance.as_ref(), "/api/v1/resource");
+        assert_eq!(problem.error_type, TYPE_AUTH_MISSING);
+
+        let app_err: omni_errors::AppError = err.into();
+        match app_err {
+            omni_errors::AppError::Problem(p) => {
+                assert_eq!(p.status, 401);
+                assert_eq!(p.code, ERR_AUTH_MISSING_CREDENTIALS);
+            }
+            _ => panic!("Expected AppError::Problem"),
+        }
+    }
+
+    #[cfg(feature = "axum")]
+    #[test]
+    fn test_into_response() {
+        use axum::response::IntoResponse;
+
+        let err = AuthError::InsufficientRole;
+        let resp = err.into_response();
+        assert_eq!(resp.status(), axum::http::StatusCode::FORBIDDEN);
+        let ext = resp.extensions().get::<ErrorCodeExtension>();
+        assert!(ext.is_some());
+        assert_eq!(ext.unwrap().0.as_ref(), ERR_AUTH_INSUFFICIENT_ROLES);
+    }
+}

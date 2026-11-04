@@ -135,3 +135,143 @@ impl TokenFamilyStore for MemoryTokenFamilyStore {
         Ok(!invalidated.contains(&family_id))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_refresh_token_record_serde() {
+        let record = RefreshTokenRecord {
+            token_id: Uuid::now_v7(),
+            family_id: Uuid::now_v7(),
+            user_id: Uuid::now_v7(),
+            generation: 1,
+            is_used: false,
+            expires_at: 1_700_000_000,
+        };
+
+        let json = serde_json::to_string(&record).unwrap();
+        let de: RefreshTokenRecord = serde_json::from_str(&json).unwrap();
+        assert_eq!(record, de);
+    }
+
+    #[tokio::test]
+    async fn test_memory_token_family_rotation_flow() {
+        let store = MemoryTokenFamilyStore::new();
+        let family_id = Uuid::now_v7();
+        let user_id = Uuid::now_v7();
+        let token_1 = Uuid::now_v7();
+        let token_2 = Uuid::now_v7();
+        let token_3 = Uuid::now_v7();
+
+        // 1. Record initial token gen 0
+        let record_1 = RefreshTokenRecord {
+            token_id: token_1,
+            family_id,
+            user_id,
+            generation: 0,
+            is_used: false,
+            expires_at: 1_700_001_000,
+        };
+        store.record_token(&record_1).await.unwrap();
+        assert!(store.is_family_valid(family_id).await.unwrap());
+
+        // 2. Rotate token_1 -> token_2
+        let record_2 = store
+            .rotate_token(token_1, token_2, 1_700_002_000)
+            .await
+            .expect("First rotation should succeed");
+        assert_eq!(record_2.token_id, token_2);
+        assert_eq!(record_2.generation, 1);
+        assert!(!record_2.is_used);
+
+        // 3. Rotate token_2 -> token_3
+        let record_3 = store
+            .rotate_token(token_2, token_3, 1_700_003_000)
+            .await
+            .expect("Second rotation should succeed");
+        assert_eq!(record_3.token_id, token_3);
+        assert_eq!(record_3.generation, 2);
+        assert!(store.is_family_valid(family_id).await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_token_theft_detection_and_invalidation() {
+        let store = MemoryTokenFamilyStore::new();
+        let family_id = Uuid::now_v7();
+        let user_id = Uuid::now_v7();
+        let token_1 = Uuid::now_v7();
+        let token_2 = Uuid::now_v7();
+        let attacker_token = Uuid::now_v7();
+
+        let initial = RefreshTokenRecord {
+            token_id: token_1,
+            family_id,
+            user_id,
+            generation: 0,
+            is_used: false,
+            expires_at: 1_700_001_000,
+        };
+        store.record_token(&initial).await.unwrap();
+
+        // Legitimate user rotates token_1 -> token_2
+        store
+            .rotate_token(token_1, token_2, 1_700_002_000)
+            .await
+            .unwrap();
+
+        // Attacker attempts to rotate the already used token_1 -> triggers TokenTheftDetected
+        let theft_res = store
+            .rotate_token(token_1, attacker_token, 1_700_003_000)
+            .await;
+        assert!(matches!(theft_res, Err(AuthError::TokenTheftDetected)));
+
+        // Family is now invalidated
+        assert!(!store.is_family_valid(family_id).await.unwrap());
+
+        // Even legitimate user with token_2 is now rejected
+        let victim_token = Uuid::now_v7();
+        let next_res = store
+            .rotate_token(token_2, victim_token, 1_700_004_000)
+            .await;
+        assert!(matches!(next_res, Err(AuthError::TokenRevoked)));
+    }
+
+    #[tokio::test]
+    async fn test_invalidate_family_manually() {
+        let store = MemoryTokenFamilyStore::new();
+        let family_id = Uuid::now_v7();
+        let user_id = Uuid::now_v7();
+        let token_1 = Uuid::now_v7();
+        let token_2 = Uuid::now_v7();
+
+        let record = RefreshTokenRecord {
+            token_id: token_1,
+            family_id,
+            user_id,
+            generation: 0,
+            is_used: false,
+            expires_at: 1_700_001_000,
+        };
+        store.record_token(&record).await.unwrap();
+        assert!(store.is_family_valid(family_id).await.unwrap());
+
+        // Manually invalidate family
+        store.invalidate_family(family_id).await.unwrap();
+        assert!(!store.is_family_valid(family_id).await.unwrap());
+
+        // Any rotation should now fail
+        let res = store.rotate_token(token_1, token_2, 1_700_002_000).await;
+        assert!(matches!(res, Err(AuthError::TokenRevoked)));
+    }
+
+    #[tokio::test]
+    async fn test_rotate_nonexistent_token() {
+        let store = MemoryTokenFamilyStore::new();
+        let res = store
+            .rotate_token(Uuid::now_v7(), Uuid::now_v7(), 1_700_002_000)
+            .await;
+        assert!(matches!(res, Err(AuthError::TokenRevoked)));
+    }
+}

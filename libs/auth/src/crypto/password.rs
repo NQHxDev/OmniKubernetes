@@ -68,3 +68,66 @@ impl PasswordSecurity {
         .map_err(|join_err| AuthError::InternalTaskPanic(join_err.to_string()))?
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_security_new_and_from_config() {
+        let sec = PasswordSecurity::new(4096, 1, 1).expect("Init should succeed");
+        assert!(format!("{sec:?}").contains("PasswordSecurity"));
+
+        let cfg = Argon2Config {
+            memory_kib: 4096,
+            iterations: 1,
+            parallelism: 1,
+            ..Default::default()
+        };
+        assert!(PasswordSecurity::from_config(&cfg).is_ok());
+
+        // Invalid parameters
+        let invalid = PasswordSecurity::new(0, 0, 0);
+        assert!(matches!(invalid, Err(AuthError::CryptoConfiguration(_))));
+    }
+
+    #[tokio::test]
+    async fn test_hash_and_verify_password_lifecycle() {
+        // Use minimal memory/iterations for fast unit testing
+        let sec = PasswordSecurity::new(4096, 1, 1).unwrap();
+        let password = SecretString::from("MySecureP@ssw0rd123!");
+
+        let hash = sec
+            .hash_password(password.clone())
+            .await
+            .expect("Hashing should succeed");
+        assert!(hash.starts_with("$argon2id$"));
+
+        // Matching password
+        let match_res = sec
+            .verify_password(password, hash.clone())
+            .await
+            .expect("Verification should run cleanly");
+        assert!(match_res);
+
+        // Incorrect password
+        let wrong_password = SecretString::from("WrongPassword123!");
+        let wrong_res = sec
+            .verify_password(wrong_password, hash)
+            .await
+            .expect("Verification should run cleanly");
+        assert!(!wrong_res);
+
+        // Malformed hash
+        let malformed_res = sec
+            .verify_password(
+                SecretString::from("any"),
+                "invalid-hash-phc-format".to_string(),
+            )
+            .await;
+        assert!(matches!(
+            malformed_res,
+            Err(AuthError::InvalidHashFormat(_))
+        ));
+    }
+}

@@ -251,3 +251,256 @@ fn init_asymmetric_keys(
         _ => unreachable!(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use secrecy::SecretString;
+
+    fn test_config(algo: SupportedAlgorithm) -> AuthConfig {
+        AuthConfig {
+            enabled: true,
+            jwt_algorithm: algo,
+            jwt_secret: SecretString::from(
+                "test_super_secret_signing_key_at_least_32_bytes_entropy_123456789",
+            ),
+            issuer: "urn:omni:auth".to_string(),
+            audience: "urn:omni:api".to_string(),
+            access_token_ttl_secs: 900,
+            refresh_token_ttl_secs: 604_800,
+            clock_skew_leeway_secs: 10,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_token_engine_hs256_roundtrip() {
+        let config = test_config(SupportedAlgorithm::HS256);
+        let engine = TokenEngine::new(config).expect("HS256 init failed");
+
+        let sub = Uuid::now_v7();
+        let now = Utc::now().timestamp();
+        let claims = AuthUserClaims {
+            sub,
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now + 300,
+            nbf: now - 10,
+            iat: now,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: Some(Uuid::now_v7()),
+            session_id: Some(Uuid::now_v7()),
+            roles: vec![Role::User, Role::Admin],
+            permissions: vec!["orders:read".to_string()],
+            email: Some("user@omni.internal".to_string()),
+        };
+
+        let token = engine.encode_claims(&claims).expect("Encode failed");
+        let decoded = engine.decode_token(&token).expect("Decode failed");
+        assert_eq!(decoded.sub, sub);
+        assert_eq!(decoded.roles, vec![Role::User, Role::Admin]);
+        assert_eq!(decoded.permissions, vec!["orders:read".to_string()]);
+    }
+
+    #[test]
+    fn test_token_engine_algorithms_hs384_and_hs512() {
+        for algo in [SupportedAlgorithm::HS384, SupportedAlgorithm::HS512] {
+            let config = test_config(algo);
+            let engine = TokenEngine::new(config).expect("Engine init failed");
+
+            let now = Utc::now().timestamp();
+            let claims = AuthUserClaims {
+                sub: Uuid::now_v7(),
+                iss: "urn:omni:auth".to_string(),
+                aud: "urn:omni:api".to_string(),
+                exp: now + 300,
+                nbf: now - 10,
+                iat: now,
+                jti: Uuid::now_v7(),
+                token_type: TokenType::Access,
+                tenant_id: None,
+                session_id: None,
+                roles: vec![Role::SuperAdmin],
+                permissions: vec!["*".to_string()],
+                email: None,
+            };
+
+            let token = engine.encode_claims(&claims).expect("Encode failed");
+            let decoded = engine.decode_token(&token).expect("Decode failed");
+            assert_eq!(decoded.sub, claims.sub);
+            assert!(decoded.is_super_admin());
+        }
+    }
+
+    #[test]
+    fn test_token_engine_expired_token() {
+        let config = test_config(SupportedAlgorithm::HS256);
+        let engine = TokenEngine::new(config).unwrap();
+
+        let now = Utc::now().timestamp();
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now - 60, // expired 60 seconds ago
+            nbf: now - 120,
+            iat: now - 120,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![Role::User],
+            permissions: vec![],
+            email: None,
+        };
+
+        let token = engine.encode_claims(&claims).unwrap();
+        let res = engine.decode_token(&token);
+        match res {
+            Err(AuthError::TokenExpired) => {}
+            other => panic!("Expected AuthError::TokenExpired, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_token_engine_issuer_and_audience_mismatch() {
+        let config = test_config(SupportedAlgorithm::HS256);
+        let engine = TokenEngine::new(config).unwrap();
+        let now = Utc::now().timestamp();
+
+        // Mismatched issuer
+        let mut claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:other:issuer".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now + 300,
+            nbf: now,
+            iat: now,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![],
+            permissions: vec![],
+            email: None,
+        };
+        let token = engine.encode_claims(&claims).unwrap();
+        match engine.decode_token(&token) {
+            Err(AuthError::InvalidIssuer) => {}
+            other => panic!("Expected InvalidIssuer, got {other:?}"),
+        }
+
+        // Mismatched audience
+        claims.iss = "urn:omni:auth".to_string();
+        claims.aud = "urn:other:aud".to_string();
+        let token = engine.encode_claims(&claims).unwrap();
+        match engine.decode_token(&token) {
+            Err(AuthError::InvalidAudience) => {}
+            other => panic!("Expected InvalidAudience, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_token_engine_invalid_signature() {
+        let config1 = test_config(SupportedAlgorithm::HS256);
+        let mut config2 = test_config(SupportedAlgorithm::HS256);
+        config2.jwt_secret =
+            SecretString::from("completely_different_secret_key_at_least_32_bytes_entropy");
+
+        let engine1 = TokenEngine::new(config1).unwrap();
+        let engine2 = TokenEngine::new(config2).unwrap();
+        let now = Utc::now().timestamp();
+
+        let claims = AuthUserClaims {
+            sub: Uuid::now_v7(),
+            iss: "urn:omni:auth".to_string(),
+            aud: "urn:omni:api".to_string(),
+            exp: now + 300,
+            nbf: now,
+            iat: now,
+            jti: Uuid::now_v7(),
+            token_type: TokenType::Access,
+            tenant_id: None,
+            session_id: None,
+            roles: vec![],
+            permissions: vec![],
+            email: None,
+        };
+
+        let token = engine1.encode_claims(&claims).unwrap();
+        match engine2.decode_token(&token) {
+            Err(AuthError::InvalidSignature) => {}
+            other => panic!("Expected InvalidSignature, got {other:?}"),
+        }
+
+        // Also test truly malformed token
+        match engine1.decode_token("not.a.valid.jwt.string") {
+            Err(AuthError::MalformedToken(_)) => {}
+            other => panic!("Expected MalformedToken, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_token_engine_generate_token_pair() {
+        let config = test_config(SupportedAlgorithm::HS256);
+        let engine = TokenEngine::new(config).unwrap();
+
+        let sub = Uuid::now_v7();
+        let tenant_id = Some(Uuid::now_v7());
+        let session_id = Some(Uuid::now_v7());
+        let roles = vec![Role::Admin];
+        let permissions = vec!["clusters:read".to_string()];
+        let email = Some("admin@example.com".to_string());
+
+        let pair = engine
+            .generate_token_pair(
+                sub,
+                tenant_id,
+                session_id,
+                roles.clone(),
+                permissions.clone(),
+                email.clone(),
+            )
+            .expect("generate_token_pair failed");
+
+        assert_eq!(pair.token_type, "Bearer");
+        assert_eq!(pair.expires_in, 900);
+
+        let access = engine.decode_token(&pair.access_token).unwrap();
+        assert_eq!(access.sub, sub);
+        assert_eq!(access.token_type, TokenType::Access);
+        assert_eq!(access.tenant_id, tenant_id);
+        assert_eq!(access.session_id, session_id);
+        assert_eq!(access.roles, roles);
+        assert_eq!(access.permissions, permissions);
+        assert_eq!(access.email, email);
+
+        let refresh = engine.decode_token(&pair.refresh_token).unwrap();
+        assert_eq!(refresh.sub, sub);
+        assert_eq!(refresh.token_type, TokenType::Refresh);
+        assert_eq!(refresh.tenant_id, tenant_id);
+    }
+
+    #[test]
+    fn test_token_engine_unsupported_asymmetric() {
+        let mut config = test_config(SupportedAlgorithm::ES512);
+        config.jwt_algorithm = SupportedAlgorithm::ES512;
+        let res = TokenEngine::new(config);
+        match res {
+            Err(AuthError::CryptoConfiguration(msg)) => {
+                assert!(msg.contains("ES512"));
+            }
+            other => panic!("Expected CryptoConfiguration error for ES512, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_token_engine_debug_and_config() {
+        let config = test_config(SupportedAlgorithm::HS256);
+        let engine = TokenEngine::new(config.clone()).unwrap();
+        let debug_str = format!("{engine:?}");
+        assert!(debug_str.contains("TokenEngine"));
+        assert_eq!(engine.config().issuer, config.issuer);
+    }
+}

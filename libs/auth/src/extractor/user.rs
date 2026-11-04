@@ -145,3 +145,165 @@ where
         std::future::ready(res)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_test_user(roles: Vec<Role>, permissions: Vec<String>) -> AuthenticatedUser {
+        AuthenticatedUser {
+            user_id: Uuid::now_v7(),
+            tenant_id: Some(Uuid::now_v7()),
+            session_id: Some(Uuid::now_v7()),
+            roles,
+            permissions,
+            email: Some("user@omni.internal".to_string()),
+            token_id: Uuid::now_v7(),
+        }
+    }
+
+    #[test]
+    fn test_authenticated_user_methods() {
+        let user = make_test_user(
+            vec![Role::User, Role::Operator],
+            vec!["pods:read".to_string(), "services:*".to_string()],
+        );
+
+        assert!(!user.is_super_admin());
+        assert!(user.has_role(&Role::User));
+        assert!(user.has_role(&Role::Operator));
+        assert!(!user.has_role(&Role::Admin));
+        assert!(user.has_any_role(&[Role::Admin, Role::User]));
+        assert!(!user.has_any_role(&[Role::Admin, Role::SuperAdmin]));
+
+        assert!(user.has_permission("pods:read"));
+        assert!(!user.has_permission("pods:delete"));
+        assert!(user.has_permission("services:get"));
+        assert!(user.has_permission("services:delete"));
+        assert!(!user.has_permission("deployments:get"));
+
+        assert!(user.has_all_permissions(&["pods:read", "services:get"]));
+        assert!(!user.has_all_permissions(&["pods:read", "deployments:get"]));
+
+        // SuperAdmin bypass
+        let admin = make_test_user(vec![Role::SuperAdmin], vec![]);
+        assert!(admin.is_super_admin());
+        assert!(admin.has_role(&Role::Admin));
+        assert!(admin.has_role(&Role::Custom("arbitrary".into())));
+        assert!(admin.has_any_role(&[Role::Custom("arbitrary".into())]));
+        assert!(admin.has_permission("any:action"));
+        assert!(admin.has_all_permissions(&["a", "b", "c"]));
+    }
+
+    #[cfg(feature = "axum")]
+    #[tokio::test]
+    async fn test_authenticated_user_extractor() {
+        use axum::http::Request;
+
+        let user = make_test_user(vec![Role::User], vec![]);
+        let mut req = Request::builder().body(()).unwrap();
+        req.extensions_mut().insert(user.clone());
+
+        let (mut parts, ()) = req.into_parts();
+        let extracted = AuthenticatedUser::from_request_parts(&mut parts, &())
+            .await
+            .expect("Extraction should succeed");
+        assert_eq!(extracted, user);
+
+        // Without user in extensions
+        let empty_req = Request::builder().body(()).unwrap();
+        let (mut parts, ()) = empty_req.into_parts();
+        let err = AuthenticatedUser::from_request_parts(&mut parts, &())
+            .await
+            .unwrap_err();
+        match err {
+            omni_errors::AppError::Unauthorized => {}
+            other => panic!("Expected Unauthorized, got {other:?}"),
+        }
+    }
+
+    #[cfg(feature = "axum")]
+    #[tokio::test]
+    async fn test_optional_user_extractor() {
+        use axum::http::Request;
+
+        let user = make_test_user(vec![Role::User], vec![]);
+        let mut req = Request::builder().body(()).unwrap();
+        req.extensions_mut().insert(user.clone());
+
+        let (mut parts, ()) = req.into_parts();
+        let opt_user = OptionalUser::from_request_parts(&mut parts, &())
+            .await
+            .expect("Optional extraction never fails");
+        assert_eq!(opt_user.0, Some(user));
+
+        // Without user
+        let empty_req = Request::builder().body(()).unwrap();
+        let (mut parts, ()) = empty_req.into_parts();
+        let opt_user = OptionalUser::from_request_parts(&mut parts, &())
+            .await
+            .expect("Optional extraction never fails");
+        assert_eq!(opt_user.0, None);
+    }
+
+    #[cfg(feature = "axum")]
+    #[tokio::test]
+    async fn test_bearer_token_extractor() {
+        use axum::http::Request;
+
+        // Valid Bearer
+        let req = Request::builder()
+            .header("Authorization", "Bearer valid_jwt_token_123")
+            .body(())
+            .unwrap();
+        let (mut parts, ()) = req.into_parts();
+        let token = BearerToken::from_request_parts(&mut parts, &())
+            .await
+            .expect("Bearer extraction should succeed");
+        assert_eq!(token.0, "valid_jwt_token_123");
+
+        // Valid Bearer with extra spaces
+        let req = Request::builder()
+            .header("Authorization", "Bearer    spaced_token   ")
+            .body(())
+            .unwrap();
+        let (mut parts, ()) = req.into_parts();
+        let token = BearerToken::from_request_parts(&mut parts, &())
+            .await
+            .expect("Bearer extraction should trim");
+        assert_eq!(token.0, "spaced_token");
+
+        // Missing Authorization header
+        let req = Request::builder().body(()).unwrap();
+        let (mut parts, ()) = req.into_parts();
+        assert!(
+            BearerToken::from_request_parts(&mut parts, &())
+                .await
+                .is_err()
+        );
+
+        // Non-Bearer header (e.g. Basic)
+        let req = Request::builder()
+            .header("Authorization", "Basic dXNlcjpwYXNz")
+            .body(())
+            .unwrap();
+        let (mut parts, ()) = req.into_parts();
+        assert!(
+            BearerToken::from_request_parts(&mut parts, &())
+                .await
+                .is_err()
+        );
+
+        // Empty Bearer token
+        let req = Request::builder()
+            .header("Authorization", "Bearer   ")
+            .body(())
+            .unwrap();
+        let (mut parts, ()) = req.into_parts();
+        assert!(
+            BearerToken::from_request_parts(&mut parts, &())
+                .await
+                .is_err()
+        );
+    }
+}

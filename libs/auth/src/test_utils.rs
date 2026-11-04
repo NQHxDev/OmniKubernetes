@@ -198,3 +198,96 @@ where
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+    use tower::{ServiceBuilder, ServiceExt, service_fn};
+
+    #[test]
+    fn test_claims_builder_full() {
+        let sub = Uuid::now_v7();
+        let tid = Uuid::now_v7();
+        let sid = Uuid::now_v7();
+
+        let claims = ClaimsBuilder::new()
+            .with_sub(sub)
+            .with_tenant_id(Some(tid))
+            .with_session_id(Some(sid))
+            .with_role(Role::Operator)
+            .with_permission("nodes:drain")
+            .expired()
+            .build();
+
+        assert_eq!(claims.sub, sub);
+        assert_eq!(claims.tenant_id, Some(tid));
+        assert_eq!(claims.session_id, Some(sid));
+        assert!(claims.roles.contains(&Role::Operator));
+        assert!(claims.permissions.contains(&"nodes:drain".to_string()));
+        assert!(claims.exp < Utc::now().timestamp());
+
+        let default_claims = ClaimsBuilder::default().build();
+        assert_eq!(default_claims.iss, "urn:omni:auth");
+
+        let with_roles_claims = ClaimsBuilder::new()
+            .with_roles(vec![Role::Admin])
+            .with_permissions(vec!["p1".into(), "p2".into()])
+            .build();
+        assert_eq!(with_roles_claims.roles, vec![Role::Admin]);
+        assert_eq!(with_roles_claims.permissions.len(), 2);
+    }
+
+    #[test]
+    fn test_create_test_token_and_engine() {
+        let claims = ClaimsBuilder::new().build();
+        let token = create_test_token(&claims);
+        assert_ne!(token, "");
+
+        let engine = create_test_token_engine();
+        let decoded = engine.decode_token(&token).unwrap();
+        assert_eq!(decoded.sub, claims.sub);
+    }
+
+    async fn mock_user_echo_handler(
+        req: Request<Body>,
+    ) -> Result<Response, std::convert::Infallible> {
+        let u = req
+            .extensions()
+            .get::<AuthenticatedUser>()
+            .cloned()
+            .unwrap();
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .header("x-user-id", u.user_id.to_string())
+            .body(Body::empty())
+            .unwrap())
+    }
+
+    #[tokio::test]
+    async fn test_mock_auth_layer() {
+        let user = AuthenticatedUser {
+            user_id: Uuid::now_v7(),
+            tenant_id: Some(Uuid::now_v7()),
+            session_id: None,
+            roles: vec![Role::Admin],
+            permissions: vec!["*".to_string()],
+            email: None,
+            token_id: Uuid::now_v7(),
+        };
+
+        let layer = MockAuthLayer::new(user.clone());
+
+        let mut svc = ServiceBuilder::new()
+            .layer(layer)
+            .service(service_fn(mock_user_echo_handler));
+
+        let req = Request::builder().body(Body::empty()).unwrap();
+        let resp = svc.ready().await.unwrap().call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers().get("x-user-id").unwrap(),
+            &user.user_id.to_string()
+        );
+    }
+}

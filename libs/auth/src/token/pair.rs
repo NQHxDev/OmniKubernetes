@@ -27,3 +27,25 @@ impl TokenPair {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_token_pair_new() {
+        let pair = TokenPair::new("acc_token".into(), "ref_token".into(), 3600);
+        assert_eq!(pair.access_token, "acc_token");
+        assert_eq!(pair.refresh_token, "ref_token");
+        assert_eq!(pair.token_type, "Bearer");
+        assert_eq!(pair.expires_in, 3600);
+    }
+
+    #[test]
+    fn test_token_pair_serde() {
+        let pair = TokenPair::new("jwt_access".into(), "jwt_refresh".into(), 900);
+        let json = serde_json::to_string(&pair).unwrap();
+        let deserialized: TokenPair = serde_json::from_str(&json).unwrap();
+        assert_eq!(pair, deserialized);
+    }
+}
