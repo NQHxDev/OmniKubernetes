@@ -1,0 +1,65 @@
+[package]
+name = "omni-messaging"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Nền tảng chia sẻ nội bộ workspace
+omni-common = { workspace = true }
+omni-errors = { workspace = true }
+omni-logging = { workspace = true }
+omni-metrics = { workspace = true }
+omni-database = { workspace = true, optional = true }
+omni-cache = { workspace = true, optional = true }
+
+# Asynchronous Runtime & Synchronization
+tokio = { workspace = true, features = ["full"] }
+tokio-util = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+
+# Serialization & CloudEvents
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+uuid = { workspace = true, features = ["v4", "v7", "serde"] }
+chrono = { workspace = true, features = ["serde", "clock"] }
+
+# Configuration & Validation
+secrecy = { workspace = true, features = ["serde"] }
+validator = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+rand = { workspace = true }
+
+# Database (PostgreSQL)
+sqlx = { workspace = true, optional = true }
+
+# Observability & Distributed Tracing
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+opentelemetry = { workspace = true }
+metrics = { workspace = true }
+
+# Optional Message Broker Drivers
+lapin = { version = "2.5", default-features = false, features = ["rustls"], optional = true }
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[features]
+default = ["postgres", "cache-dedup", "in-memory", "rabbitmq"]
+
+postgres = ["dep:omni-database", "dep:sqlx"]
+cache-dedup = ["dep:omni-cache"]
+
+in-memory = []
+rabbitmq = ["dep:lapin"]
+kafka = []
+nats = []
+
+test-utils = ["in-memory"]

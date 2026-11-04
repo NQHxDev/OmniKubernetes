@@ -1,0 +1,73 @@
+{
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "files.exclude": {
+        "**/target": true,
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/target/**": true,
+        "**/coverage/**": true,
+        "**/cargo-cache/**": true,
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
+    },
+    "search.exclude": {
+        "**/target": true,
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/dist": true,
+        "**/coverage": true,
+        "**/cargo-cache": true,
+        "**/*.profraw": true,
+        "**/*.profdata": true,
+        "**/Cargo.lock": true,
+        "**/.codegraph": true
+    },
+    "rust-analyzer.linkedProjects": [
+        "${workspaceFolder}/Cargo.toml"
+    ],
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.cargo.buildScripts.enable": true,
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.inlayHints.lifetimeElisionHints.enable": "skip_trivial",
+    "[rust]": {
+        "editor.defaultFormatter": "rust-lang.rust-analyzer",
+        "editor.tabSize": 4,
+        "editor.formatOnSave": true
+    },
+    "evenBetterToml.formatter.arrayAutoExpand": false,
+    "[toml]": {
+        "editor.defaultFormatter": "tamasfe.even-better-toml",
+        "editor.tabSize": 4,
+        "editor.formatOnSave": false
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 4
+    },
+    "[yaml]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml",
+        "editor.tabSize": 2
+    },
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2,
+        "editor.wordWrap": "on",
+        "files.trimTrailingWhitespace": false
+    }
+}

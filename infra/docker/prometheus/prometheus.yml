@@ -1,0 +1,22 @@
+# Prometheus local scrape configuration
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "omni-services"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets:
+          - "host.docker.internal:8080" # gateway
+          - "host.docker.internal:8081" # auth
+          - "host.docker.internal:8082" # order
+          - "host.docker.internal:8083" # payment
+          - "host.docker.internal:8084" # product
+          - "host.docker.internal:8085" # user
+          - "host.docker.internal:8086" # notification
+

@@ -1,0 +1,54 @@
+# Version Control & Git Hooks
+.git
+.gitignore
+.gitattributes
+.githooks
+
+# CI/CD & IDE Configurations
+.github
+.gitlab-ci.yml
+.idea
+.vscode
+.editorconfig
+*.iml
+*.iws
+*.ipr
+
+# Rust & General Build Artifacts
+target/
+build/
+out/
+bin/
+coverage/
+*.log
+*.profraw
+
+# Documentation & Changelogs (prevent cache invalidation on doc changes)
+README.md
+CHANGELOG.md
+LICENSE
+docker-README.md
+docs/
+**/*.md
+
+# Linters & Formatters
+.markdownlint.json
+.markdownlintignore
+.prettierrc
+.prettierignore
+rustfmt.toml
+
+# Infrastructure, Local Dev & Scripts
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+process-compose.yaml
+infra/
+scripts/
+tests/e2e/
+tests/load/
+tests/security/
+
+# OS Metadata
+.DS_Store
+Thumbs.db

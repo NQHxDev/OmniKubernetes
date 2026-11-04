@@ -1,0 +1,21 @@
+# Rustfmt configuration file
+
+# Rust edition
+edition = "2024"
+
+# Formatting rules
+max_width = 100
+tab_spaces = 4
+hard_tabs = false
+newline_style = "Unix"
+
+# Small heuristics
+use_small_heuristics = "Default"
+
+# Code cleanliness & idiomatic Rust
+reorder_imports = true
+reorder_modules = true
+remove_nested_parens = true
+merge_derives = true
+use_field_init_shorthand = true
+use_try_shorthand = true

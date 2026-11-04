@@ -1,0 +1,76 @@
+{
+    "annotations": { "list": [] },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": 1,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+            "id": 1,
+            "title": "HTTP Request Rate (RPS)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "expr": "sum(rate(http_requests_total[1m])) by (service, route, status)",
+                    "legendFormat": "{{service}} - {{route}} ({{status}})"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+            "id": 2,
+            "title": "HTTP Request Duration (p95 & p99)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, service))",
+                    "legendFormat": "p95 {{service}}"
+                },
+                {
+                    "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, service))",
+                    "legendFormat": "p99 {{service}}"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+            "id": 3,
+            "title": "In-Flight Requests",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "expr": "http_requests_in_flight",
+                    "legendFormat": "{{service}}"
+                }
+            ]
+        },
+        {
+            "collapsed": false,
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+            "id": 4,
+            "title": "HTTP Error Rates (4xx / 5xx)",
+            "type": "timeseries",
+            "targets": [
+                {
+                    "expr": "sum(rate(http_requests_total{status=~\"[45]..\"}[1m])) by (service, status)",
+                    "legendFormat": "{{service}} ({{status}})"
+                }
+            ]
+        }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 39,
+    "tags": ["omni", "microservices"],
+    "time": { "from": "now-15m", "to": "now" },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "OmniKubernetes Microservices Overview",
+    "uid": "omni-services-overview",
+    "version": 1
+}

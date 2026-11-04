@@ -1,0 +1,62 @@
+[package]
+name = "omni-cache"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Enterprise Distributed Caching & Concurrency Control with Redis for OmniKubernetes"
+
+[lints]
+workspace = true
+
+[features]
+default = ["lz4", "probes"]
+lz4 = ["dep:lz4_flex"]
+zstd = ["dep:zstd"]
+probes = ["dep:omni-metrics"]
+tls-rustls = ["redis/tokio-rustls-comp"]
+test-util = []
+
+[dependencies]
+# Workspace dependencies
+omni-common = { workspace = true }
+omni-errors = { workspace = true }
+omni-metrics = { workspace = true, optional = true }
+
+# Redis Client
+redis = { version = "1.8.1", default-features = false, features = [
+    "tokio-comp",
+    "connection-manager",
+    "script",
+] }
+
+# Async & Runtime
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+futures = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+
+# Serialization & Codec
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+lz4_flex = { workspace = true, optional = true }
+zstd = { workspace = true, optional = true }
+
+# Security & Hashing
+hmac = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+uuid = { workspace = true, features = ["v4", "v7"] }
+rand = { workspace = true }
+
+# Observability
+tracing = { workspace = true }
+metrics = { workspace = true }
+thiserror = { workspace = true }
+secrecy = { workspace = true }
+chrono = { workspace = true }
+validator = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }

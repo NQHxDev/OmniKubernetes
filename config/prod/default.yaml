@@ -1,0 +1,25 @@
+# OmniKubernetes Production Profile Configuration (config/prod/default.yaml)
+# High concurrency & hardened security configuration.
+
+service:
+  environment: "prod"
+
+logging:
+  log_level: "info"
+  log_format: "json"
+  buffered_lines_limit: 50000
+  lossy: true
+
+observability:
+  swagger_ui_enabled: false
+  sampling_ratio: 0.1
+
+database:
+  ssl_mode: "require"
+  max_connections: 15
+  min_connections: 2
+  acquire_timeout_secs: 3
+  auto_migrate: false
+
+i18n:
+  locales_dir: "/app/locales"

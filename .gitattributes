@@ -1,0 +1,40 @@
+# Auto-detect text files
+* text=auto
+
+# Shell scripts & hooks (force LF)
+*.sh text eol=lf
+*.bash text eol=lf
+.githooks/* text eol=lf
+.githooks/** text eol=lf
+scripts/* text eol=lf
+scripts/** text eol=lf
+
+# Source & configs
+*.rs text eol=lf diff=rust
+*.toml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Dockerfile* text eol=lf
+Makefile text eol=lf
+
+# Binaries
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.tar.gz binary
+*.zip binary
+*.gz binary
+*.wasm binary
+*.so binary
+*.dylib binary
+*.dll binary
+*.exe binary

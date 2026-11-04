@@ -1,0 +1,12 @@
+# Hakari configuration for workspace dependency optimization
+hakari-package = "workspace-hack"
+resolver = "2"
+dep-format-version = "4"
+
+platforms = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+]
+
